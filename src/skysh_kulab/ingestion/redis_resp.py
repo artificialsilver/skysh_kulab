@@ -40,6 +40,10 @@ class RedisClient:
             for index in range(0, len(response), 2)
         }
 
+    def keys(self, pattern: str) -> list[str]:
+        response = self.execute("KEYS", pattern)
+        return list(response or [])
+
     def _read_response(self) -> Any:
         prefix = self._file.read(1)
         if prefix == b"+":
@@ -74,4 +78,3 @@ def encode_command(parts: tuple[Any, ...]) -> bytes:
         chunks.append(data)
         chunks.append(b"\r\n")
     return b"".join(chunks)
-

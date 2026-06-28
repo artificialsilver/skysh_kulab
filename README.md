@@ -76,6 +76,8 @@ PowerShell:
 python -m app.snapshot_worker run --interval 30
 ```
 
+snapshot worker는 Redis에 실제 존재하는 bucket key를 최신순으로 읽는다. `15m`은 최신 최대 15개, `4h`는 최신 최대 240개를 사용한다. 서버 시작 직후 bucket이 5개뿐이면 두 timeframe 모두 5개 기준으로 계산하고, bucket이 30개면 `15m`은 최신 15개, `4h`는 최신 30개 기준으로 계산한다.
+
 Git Bash:
 
 ```bash
