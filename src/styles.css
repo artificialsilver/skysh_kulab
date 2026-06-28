@@ -278,11 +278,133 @@ h1 {
 }
 
 .metrics-grid,
+.watchlist-section,
 .workbench,
 .table-section,
 .ops-band {
   width: min(1200px, calc(100vw - 48px));
   margin-inline: auto;
+}
+
+.watchlist-section {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 24px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: rgba(0, 55, 112, 0.08) 0 8px 24px, rgba(0, 55, 112, 0.04) 0 2px 6px;
+}
+
+.watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.watch-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  min-height: 190px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--canvas);
+  padding: 18px;
+  text-align: left;
+  box-shadow: rgba(0, 55, 112, 0.08) 0 1px 3px;
+}
+
+.watch-card.selected {
+  border-color: var(--primary);
+  box-shadow: rgba(83, 58, 253, 0.18) 0 8px 24px, rgba(0, 55, 112, 0.04) 0 2px 6px;
+}
+
+.persona-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 9999px;
+  color: var(--canvas);
+  background: var(--brand-dark);
+}
+
+.persona-icon.breakout,
+.persona-icon.accumulation {
+  background: var(--primary);
+}
+
+.persona-icon.panic_sell,
+.persona-icon.distribution_trap {
+  background: var(--ruby);
+}
+
+.persona-icon.retail_chop {
+  background: var(--primary-press);
+}
+
+.persona-icon.sleep {
+  color: var(--brand-dark);
+  background: var(--canvas-cream);
+}
+
+.watch-main {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.watch-main strong {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.watch-main em {
+  color: var(--ink);
+  font-style: normal;
+  font-size: 18px;
+}
+
+.watch-main small {
+  color: var(--ink-mute);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.watch-kpis {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.watch-kpis span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--canvas-soft);
+}
+
+.watch-kpis small {
+  color: var(--ink-mute);
+  font-size: 11px;
+}
+
+.watch-kpis strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 400;
+  font-feature-settings: "tnum";
 }
 
 .metrics-grid {
@@ -363,6 +485,12 @@ h1 {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.panel-head .timestamp,
+.section-head .timestamp {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .panel h2,
@@ -620,6 +748,7 @@ h1 {
   .topbar,
   .hero,
   .metrics-grid,
+  .watchlist-section,
   .workbench,
   .table-section,
   .ops-band {
@@ -642,6 +771,7 @@ h1 {
 
   .lead {
     font-size: 15px;
+    max-width: 100%;
   }
 
   .hero-controls {
@@ -659,12 +789,23 @@ h1 {
   }
 
   .metrics-grid,
+  .watchlist-grid,
   .flow-grid,
   .persona-stats {
     grid-template-columns: 1fr;
   }
 
+  .section-head {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .watch-kpis {
+    grid-template-columns: 1fr;
+  }
+
   .metric,
+  .watchlist-section,
   .panel,
   .table-section,
   .ops-band {

@@ -1,5 +1,61 @@
 # skysh_kulab
 
+관심종목 3개(`KRW-BTC`, `KRW-ETH`, `KRW-XRP`)의 수집, 지표/Persona 계산, SQLite 저장/API, 프론트 대시보드를 함께 실행할 수 있다.
+
+## 전체 실행
+
+Python 의존성:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+프론트 의존성:
+
+```bash
+npm install
+```
+
+백엔드 API:
+
+```bash
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+프론트:
+
+```bash
+npm run dev -- --port 5173
+```
+
+접속:
+
+```text
+http://127.0.0.1:5173
+```
+
+백엔드는 시작 시 demo snapshot을 SQLite에 seed한다. 실제 수집/Redis가 붙기 전에도 프론트는 `/api` 응답으로 관심종목 리스트와 상세 화면을 표시한다. demo seed를 끄려면 `SKYSH_SEED_DEMO=0`을 설정한다.
+
+## 검증
+
+```bash
+python -m pytest -q
+npm run build
+```
+
+## 모듈 연결
+
+```text
+Upbit WebSocket
+→ Redis 1분 MinuteBucket
+→ app.pipeline adapter
+→ 15m / 4h IndicatorSnapshot
+→ 15m / 4h PersonaSnapshot
+→ SQLite 저장
+→ FastAPI
+→ Vite frontend
+```
+
 1번 담당자 범위의 Python 구현이다.
 
 ```text

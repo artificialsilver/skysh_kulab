@@ -5,7 +5,8 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.constants import ALERT_TIMEFRAME, MARKETS, TIMEFRAMES
-from app.db import get_session, init_db
+from app.db import SessionLocal, get_session, init_db
+from app.demo_data import seed_demo_data
 from app.models import MarketIndicatorSnapshot, MarketPersonaSnapshot
 from app.schemas import AlertSettingIn, iso_z
 from app.storage import (
@@ -19,6 +20,8 @@ from app.storage import (
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     await init_db()
+    async with SessionLocal() as session:
+        await seed_demo_data(session)
     yield
 
 

@@ -1,6 +1,20 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { Bell, ChevronDown, Database, LineChart, RefreshCw, Search, Settings2, ShieldAlert, Signal, Waves } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  ChevronDown,
+  Database,
+  LineChart,
+  Moon,
+  RefreshCw,
+  Search,
+  Settings2,
+  ShieldAlert,
+  Shuffle,
+  TrendingUp,
+  Waves,
+} from "lucide-react";
 import "./styles.css";
 
 type Market = "KRW-BTC" | "KRW-ETH" | "KRW-XRP";
@@ -28,6 +42,20 @@ type PersonaSnapshot = {
   persona: Persona;
   confidence: number;
   reason_codes: string[];
+};
+
+type SnapshotsResponse = {
+  snapshots: Snapshot[];
+};
+
+type PersonaResponse = PersonaSnapshot & {
+  market: Market;
+  timeframe: Timeframe;
+  snapshot_at: string;
+};
+
+type AlertSettingResponse = {
+  enabled: boolean;
 };
 
 const markets: Market[] = ["KRW-BTC", "KRW-ETH", "KRW-XRP"];
@@ -159,14 +187,92 @@ function App() {
   const [market, setMarket] = React.useState<Market>("KRW-BTC");
   const [timeframe, setTimeframe] = React.useState<Timeframe>("15m");
   const [alerts, setAlerts] = React.useState(true);
+  const [apiSnapshots, setApiSnapshots] = React.useState<Partial<Record<Market, Snapshot>>>({});
+  const [apiPersonas, setApiPersonas] = React.useState<Partial<Record<Market, PersonaSnapshot>>>({});
+  const [apiReady, setApiReady] = React.useState(false);
 
-  const snapshot = snapshots[market][timeframe];
-  const persona = personas[market][timeframe];
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadMarketData() {
+      try {
+        const pairs = await Promise.all(
+          markets.map(async (item) => {
+            const [snapshotResponse, personaResponse] = await Promise.all([
+              fetch(`/api/market/${item}/snapshots?timeframe=${timeframe}`),
+              fetch(`/api/market/${item}/persona?timeframe=${timeframe}`),
+            ]);
+            if (!snapshotResponse.ok || !personaResponse.ok) {
+              throw new Error("API response was not ready");
+            }
+            const snapshotBody = (await snapshotResponse.json()) as SnapshotsResponse;
+            const personaBody = (await personaResponse.json()) as PersonaResponse;
+            const latestSnapshot = snapshotBody.snapshots[0];
+            if (!latestSnapshot) {
+              throw new Error("API snapshot was empty");
+            }
+            return [item, latestSnapshot, personaBody] as const;
+          }),
+        );
+        if (cancelled) return;
+        setApiSnapshots(Object.fromEntries(pairs.map(([item, snapshotValue]) => [item, snapshotValue])));
+        setApiPersonas(Object.fromEntries(pairs.map(([item, , personaValue]) => [item, personaValue])));
+        setApiReady(true);
+      } catch {
+        if (cancelled) return;
+        setApiSnapshots({});
+        setApiPersonas({});
+        setApiReady(false);
+      }
+    }
+
+    loadMarketData();
+    return () => {
+      cancelled = true;
+    };
+  }, [timeframe]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadAlertSetting() {
+      try {
+        const response = await fetch(`/api/market/${market}/alerts/settings`);
+        if (!response.ok) return;
+        const body = (await response.json()) as AlertSettingResponse;
+        if (!cancelled) setAlerts(body.enabled);
+      } catch {
+        if (!cancelled) setAlerts(true);
+      }
+    }
+
+    loadAlertSetting();
+    return () => {
+      cancelled = true;
+    };
+  }, [market]);
+
+  const snapshot = apiSnapshots[market] ?? snapshots[market][timeframe];
+  const persona = apiPersonas[market] ?? personas[market][timeframe];
   const marketRows = markets.map((item) => ({
     market: item,
-    snapshot: snapshots[item][timeframe],
-    persona: personas[item][timeframe],
+    snapshot: apiSnapshots[item] ?? snapshots[item][timeframe],
+    persona: apiPersonas[item] ?? personas[item][timeframe],
   }));
+
+  async function toggleAlertSetting() {
+    const nextValue = !alerts;
+    setAlerts(nextValue);
+    try {
+      await fetch(`/api/market/${market}/alerts/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeframe: "15m", enabled: nextValue }),
+      });
+    } catch {
+      setAlerts(!nextValue);
+    }
+  }
 
   return (
     <main className="shell">
@@ -195,8 +301,8 @@ function App() {
       <section className="hero" id="market">
         <div>
           <span className="tag">UTC snapshot · KST display</span>
-          <h1>Market flow console</h1>
-          <p className="lead">KRW-BTC, KRW-ETH, KRW-XRP의 1분 버킷 기반 지표와 Persona를 한 화면에서 비교합니다.</p>
+          <h1>Watchlist console</h1>
+          <p className="lead">등록된 관심종목의 Persona와 핵심 흐름을 먼저 보고, 종목을 선택해 지표 상세를 확인합니다.</p>
         </div>
         <div className="hero-controls" aria-label="Market controls">
           <div className="select-wrap">
@@ -217,6 +323,52 @@ function App() {
         </div>
       </section>
 
+      <section className="watchlist-section" aria-label="Registered watchlist">
+        <div className="section-head">
+          <div>
+            <span className="eyebrow">Watchlist</span>
+            <h2>등록된 관심종목</h2>
+          </div>
+          <span className="timestamp">{apiReady ? "FastAPI connected" : "Mock fallback"}</span>
+        </div>
+        <div className="watchlist-grid">
+          {marketRows.map((row) => (
+            <button
+              key={row.market}
+              className={`watch-card ${row.market === market ? "selected" : ""}`}
+              onClick={() => setMarket(row.market)}
+            >
+              <span className={`persona-icon ${row.persona.persona}`}>
+                <PersonaIcon persona={row.persona.persona} />
+              </span>
+              <span className="watch-main">
+                <strong>{row.market}</strong>
+                <em>{personaLabel(row.persona.persona)}</em>
+                <small>{personaDescription(row.persona.persona)}</small>
+              </span>
+              <span className="watch-kpis">
+                <span>
+                  <small>현재가</small>
+                  <strong>{formatPrice(row.market, row.snapshot.price_close)}</strong>
+                </span>
+                <span>
+                  <small>변화율</small>
+                  <strong className={row.snapshot.price_change_pct >= 0 ? "positive" : "negative"}>
+                    {row.snapshot.price_change_pct.toFixed(2)}%
+                  </strong>
+                </span>
+                <span>
+                  <small>고래 순매수</small>
+                  <strong className={row.snapshot.whale_net_ratio >= 0 ? "positive" : "negative"}>
+                    {(row.snapshot.whale_net_ratio * 100).toFixed(2)}%
+                  </strong>
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="metrics-grid" aria-label="Snapshot metrics">
         <Metric label="현재가" value={formatPrice(market, snapshot.price_close)} delta={snapshot.price_change_pct} />
         <Metric label="거래대금" value={formatKrw(snapshot.total_volume_krw)} delta={snapshot.volume_surge_ratio - 1} suffix="surge" />
@@ -228,8 +380,8 @@ function App() {
         <div className="panel chart-panel">
           <div className="panel-head">
             <div>
-              <span className="eyebrow">IndicatorSnapshot</span>
-              <h2>{market} · {timeframe}</h2>
+              <span className="eyebrow">Selected detail</span>
+              <h2>{market} · {timeframe} 상세</h2>
             </div>
             <span className="timestamp">{toKst(snapshot.snapshot_at)}</span>
           </div>
@@ -248,7 +400,7 @@ function App() {
               <span className="eyebrow">PersonaSnapshot</span>
               <h2>{personaLabel(persona.persona)}</h2>
             </div>
-            <ShieldAlert size={22} />
+            <PersonaIcon persona={persona.persona} />
           </div>
           <div className={`persona-badge ${persona.persona}`}>
             <span>{persona.persona}</span>
@@ -275,8 +427,8 @@ function App() {
       <section className="table-section">
         <div className="section-head">
           <div>
-            <span className="eyebrow">Market board</span>
-            <h2>Snapshot comparison</h2>
+            <span className="eyebrow">Core board</span>
+            <h2>관심종목 핵심 정보</h2>
           </div>
           <button className="secondary-button">
             <LineChart size={16} />
@@ -295,7 +447,7 @@ function App() {
           {marketRows.map((row) => (
             <button key={row.market} className="table-row" onClick={() => setMarket(row.market)}>
               <span className="market-cell">
-                <Signal size={16} />
+                <PersonaIcon persona={row.persona.persona} />
                 {row.market}
               </span>
               <span>{personaLabel(row.persona.persona)}</span>
@@ -318,12 +470,12 @@ function App() {
           <h2>15m 알림은 Persona 계산과 분리되어 발송 대상에서만 적용됩니다.</h2>
         </div>
         <div className="ops-items">
-          <Status icon={<Waves size={18} />} label="Upbit stream" value="mock trade events" />
-          <Status icon={<Database size={18} />} label="MinuteBucket" value="fixture 15m / 4h" />
+          <Status icon={<Waves size={18} />} label="Upbit stream" value="collection ready" />
+          <Status icon={<Database size={18} />} label="API source" value={apiReady ? "FastAPI" : "mock fallback"} />
           <label className="toggle">
             <Bell size={18} />
             <span>15m alert</span>
-            <input type="checkbox" checked={alerts} onChange={() => setAlerts((value) => !value)} />
+            <input type="checkbox" checked={alerts} onChange={toggleAlertSetting} />
           </label>
           <button className="icon-button" aria-label="Settings">
             <Settings2 size={18} />
@@ -376,6 +528,16 @@ function Status({ icon, label, value }: { icon: React.ReactNode; label: string; 
   );
 }
 
+function PersonaIcon({ persona }: { persona: Persona }) {
+  const size = 18;
+  if (persona === "breakout") return <TrendingUp size={size} />;
+  if (persona === "accumulation") return <ShieldAlert size={size} />;
+  if (persona === "distribution_trap") return <AlertTriangle size={size} />;
+  if (persona === "panic_sell") return <AlertTriangle size={size} />;
+  if (persona === "retail_chop") return <Shuffle size={size} />;
+  return <Moon size={size} />;
+}
+
 function formatKrw(value: number) {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
@@ -414,6 +576,18 @@ function personaLabel(value: Persona) {
     sleep: "Sleep",
   };
   return labels[value];
+}
+
+function personaDescription(value: Persona) {
+  const descriptions: Record<Persona, string> = {
+    accumulation: "고래 매수 우위가 유지되는 축적 구간",
+    breakout: "거래대금과 가격이 함께 확장되는 돌파 흐름",
+    distribution_trap: "가격 상승 중 고래 매도 압력이 커진 위험 구간",
+    panic_sell: "급락과 매도 물량이 동시에 커진 방어 구간",
+    retail_chop: "개인 흐름이 섞인 짧은 박스권",
+    sleep: "거래와 변동성이 낮은 관망 구간",
+  };
+  return descriptions[value];
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
