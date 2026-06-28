@@ -1,8 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import {
-  AlertTriangle,
-  Bell,
+  ArrowLeft,
   Info,
   Plus,
   RefreshCw,
@@ -15,6 +14,7 @@ import "./styles.css";
 type Market = "KRW-BTC" | "KRW-ETH" | "KRW-XRP";
 type Timeframe = "15m" | "4h";
 type Persona = "accumulation" | "breakout" | "distribution_trap" | "panic_sell" | "retail_chop" | "sleep";
+type MainTab = "watchlist" | "alerts";
 
 type Snapshot = {
   snapshot_at: string;
@@ -66,6 +66,16 @@ type MarketRow = {
 const markets: Market[] = ["KRW-BTC", "KRW-ETH", "KRW-XRP"];
 const timeframes: Timeframe[] = ["15m", "4h"];
 
+function isMarket(value: string | null): value is Market {
+  return value !== null && (markets as string[]).includes(value);
+}
+
+function readDetailMarket(): Market | null {
+  const route = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const detailMarket = route.get("detail");
+  return isMarket(detailMarket) ? detailMarket : null;
+}
+
 const PERSONA_UI: Record<Persona, { name: string; insight: string }> = {
   breakout: {
     name: "폭주 기관차",
@@ -97,6 +107,7 @@ const series = [42, 46, 43, 51, 57, 55, 64, 62, 68, 73, 69, 78, 82, 80, 88];
 
 function App() {
   const [selectedMarket, setSelectedMarket] = React.useState<Market | null>(null);
+  const [activeMainTab, setActiveMainTab] = React.useState<MainTab>("watchlist");
   const [watchlist, setWatchlist] = React.useState<Market[]>(markets);
   const [timeframe, setTimeframe] = React.useState<Timeframe>("15m");
   const [searchOpen, setSearchOpen] = React.useState(false);
@@ -106,6 +117,16 @@ function App() {
   const [apiPersonas, setApiPersonas] = React.useState<Partial<Record<Market, PersonaSnapshot>>>({});
   const [tickerPrices, setTickerPrices] = React.useState<Partial<Record<Market, number>>>({});
   const [apiReady, setApiReady] = React.useState(false);
+
+  React.useEffect(() => {
+    function syncDetailRoute() {
+      setSelectedMarket(readDetailMarket());
+    }
+
+    syncDetailRoute();
+    window.addEventListener("hashchange", syncDetailRoute);
+    return () => window.removeEventListener("hashchange", syncDetailRoute);
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -175,6 +196,7 @@ function App() {
   const market = selectedMarket ?? watchlist[0] ?? "KRW-BTC";
   const snapshot = apiSnapshots[market] ? withLivePrice(market, apiSnapshots[market], tickerPrices) : undefined;
   const persona = apiPersonas[market];
+  const detailOpen = Boolean(selectedMarket && snapshot && persona);
   const marketRows: MarketRow[] = watchlist.map((item) => ({
     market: item,
     snapshot: apiSnapshots[item] ? withLivePrice(item, apiSnapshots[item], tickerPrices) : undefined,
@@ -188,8 +210,17 @@ function App() {
 
   function removeWatchMarket(nextMarket: Market) {
     setWatchlist((items) => items.filter((item) => item !== nextMarket));
-    if (selectedMarket === nextMarket) setSelectedMarket(null);
+    if (selectedMarket === nextMarket) window.location.hash = "watchlist";
     setAlertMarkets((items) => items.filter((item) => item !== nextMarket));
+  }
+
+  function openDetail(nextMarket: Market) {
+    setSelectedMarket(nextMarket);
+    window.location.hash = `detail=${encodeURIComponent(nextMarket)}`;
+  }
+
+  function closeDetail() {
+    window.location.hash = "watchlist";
   }
 
   function toggleAlertMarket(nextMarket: Market) {
@@ -213,11 +244,35 @@ function App() {
           <span>SkySH</span>
         </div>
         <nav className="nav">
-          <a href="#watchlist">Watchlist</a>
-          <a href="#alerts">Alerts</a>
+          <button
+            className={activeMainTab === "watchlist" ? "active" : ""}
+            onClick={() => {
+              setActiveMainTab("watchlist");
+              window.location.hash = "watchlist";
+            }}
+          >
+            관심종목
+          </button>
+          <button
+            className={activeMainTab === "alerts" ? "active" : ""}
+            onClick={() => {
+              setActiveMainTab("alerts");
+              window.location.hash = "alerts";
+            }}
+          >
+            알림조건
+          </button>
         </nav>
         <div className="actions">
-          <button className="icon-button" aria-label="Search" onClick={() => setSearchOpen((value) => !value)}>
+          <button
+            className="icon-button"
+            aria-label="Search"
+            onClick={() => {
+              setActiveMainTab("watchlist");
+              window.location.hash = "watchlist";
+              setSearchOpen((value) => !value);
+            }}
+          >
             <Search size={18} />
           </button>
           <button className="primary-button">
@@ -227,6 +282,8 @@ function App() {
         </div>
       </header>
 
+      {!detailOpen ? (
+        <>
       <section className="hero" id="watchlist">
         <div>
           <span className="tag">UTC snapshot · KST display</span>
@@ -234,6 +291,24 @@ function App() {
           <p className="lead">등록된 관심종목의 Persona와 핵심 흐름을 먼저 보고, 종목을 선택해 지표 상세를 확인합니다.</p>
         </div>
         <div className="hero-controls" aria-label="Market controls">
+          <div className="main-tabs" role="tablist" aria-label="Main sections">
+            <button
+              role="tab"
+              aria-selected={activeMainTab === "watchlist"}
+              className={activeMainTab === "watchlist" ? "active" : ""}
+              onClick={() => setActiveMainTab("watchlist")}
+            >
+              관심종목
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeMainTab === "alerts"}
+              className={activeMainTab === "alerts" ? "active" : ""}
+              onClick={() => setActiveMainTab("alerts")}
+            >
+              알림조건
+            </button>
+          </div>
           <div className="segment">
             {timeframes.map((item) => (
               <button key={item} className={item === timeframe ? "active" : ""} onClick={() => setTimeframe(item)}>
@@ -244,7 +319,7 @@ function App() {
         </div>
       </section>
 
-      {searchOpen ? (
+      {activeMainTab === "watchlist" && searchOpen ? (
         <section className="search-panel" aria-label="Search watchlist market">
           <div className="section-head">
             <div>
@@ -269,108 +344,128 @@ function App() {
         </section>
       ) : null}
 
-      <section className="watchlist-section" aria-label="Registered watchlist">
-        <div className="section-head">
-          <div>
-            <span className="eyebrow">Watchlist</span>
-            <h2>등록된 관심종목</h2>
+      {activeMainTab === "watchlist" ? (
+        <section className="watchlist-section" aria-label="Registered watchlist">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Watchlist</span>
+              <h2>등록된 관심종목</h2>
+            </div>
+            <span className="timestamp">{apiReady ? "FastAPI connected" : "Mock fallback"}</span>
           </div>
-          <span className="timestamp">{apiReady ? "FastAPI connected" : "Mock fallback"}</span>
-        </div>
-        <div className="watchlist-grid">
-          {marketRows.map((row) => (
-            <article
-              key={row.market}
-              className={`watch-card ${row.market === market ? "selected" : ""} ${!row.snapshot || !row.persona ? "empty" : ""}`}
-              onClick={() => {
-                if (row.snapshot && row.persona) setSelectedMarket(row.market);
-              }}
-              onKeyDown={(event) => {
-                if ((event.key === "Enter" || event.key === " ") && row.snapshot && row.persona) setSelectedMarket(row.market);
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <button
-                className="delete-watch"
-                aria-label={`${row.market} delete`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  removeWatchMarket(row.market);
+          <div className="watchlist-grid">
+            {marketRows.map((row) => (
+              <article
+                key={row.market}
+                className={`watch-card ${row.market === selectedMarket ? "selected" : ""} ${!row.snapshot || !row.persona ? "empty" : ""}`}
+                onClick={() => {
+                  if (row.snapshot && row.persona) openDetail(row.market);
                 }}
+                onKeyDown={(event) => {
+                  if ((event.key === "Enter" || event.key === " ") && row.snapshot && row.persona) openDetail(row.market);
+                }}
+                role="button"
+                tabIndex={0}
               >
-                <X size={14} />
-              </button>
-              {row.persona ? <PersonaBadge persona={row.persona.persona} /> : <span className="persona-icon empty"><Waves size={18} /></span>}
-              <span className="watch-main">
-                <strong>{row.market}</strong>
-                <small>{row.persona ? personaInsight(row.persona.persona) : "Redis bucket과 DB snapshot이 아직 없습니다."}</small>
-              </span>
-              <span className="watch-kpis">
-                <span>
-                  <small>현재가</small>
-                  <strong>{row.snapshot ? formatPrice(row.market, row.snapshot.price_close) : formatOptionalPrice(row.market, tickerPrices[row.market])}</strong>
-                </span>
-                <span>
-                  <small>변화율</small>
-                  <strong className={row.snapshot && row.snapshot.price_change_pct >= 0 ? "positive" : "negative"}>
-                    {row.snapshot ? `${row.snapshot.price_change_pct.toFixed(2)}%` : "-"}
-                  </strong>
-                </span>
-                <span>
-                  <small>고래 순매수</small>
-                  <strong className={row.snapshot && row.snapshot.whale_net_ratio >= 0 ? "positive" : "negative"}>
-                    {row.snapshot ? `${(row.snapshot.whale_net_ratio * 100).toFixed(2)}%` : "-"}
-                  </strong>
-                </span>
-              </span>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="alert-panel" id="alerts">
-        <div className="section-head">
-          <div>
-            <span className="eyebrow">Alert</span>
-            <h2>알림 조건</h2>
-          </div>
-          <span className="timestamp">종목 + Persona 조합으로 수신</span>
-        </div>
-        <div className="alert-grid">
-          <div>
-            <span className="alert-label">종목</span>
-            <div className="chip-row">
-              {watchlist.map((item) => (
-                <button key={item} className={`chip ${alertMarkets.includes(item) ? "active" : ""}`} onClick={() => toggleAlertMarket(item)}>
-                  {item}
+                <button
+                  className="delete-watch"
+                  aria-label={`${row.market} delete`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    removeWatchMarket(row.market);
+                  }}
+                >
+                  <X size={14} />
                 </button>
-              ))}
-            </div>
+                {row.persona ? <PersonaBadge persona={row.persona.persona} /> : <span className="persona-icon empty"><Waves size={18} /></span>}
+                <span className="watch-main">
+                  <strong>{row.market}</strong>
+                  <small>{row.persona ? personaInsight(row.persona.persona) : "Redis bucket과 DB snapshot이 아직 없습니다."}</small>
+                </span>
+                <span className="watch-kpis">
+                  <span>
+                    <small>현재가</small>
+                    <strong>{row.snapshot ? formatPrice(row.market, row.snapshot.price_close) : formatOptionalPrice(row.market, tickerPrices[row.market])}</strong>
+                  </span>
+                  <span>
+                    <small>변화율</small>
+                    <strong className={row.snapshot && row.snapshot.price_change_pct >= 0 ? "positive" : "negative"}>
+                      {row.snapshot ? `${row.snapshot.price_change_pct.toFixed(2)}%` : "-"}
+                    </strong>
+                  </span>
+                  <span>
+                    <small>고래 순매수</small>
+                    <strong className={row.snapshot && row.snapshot.whale_net_ratio >= 0 ? "positive" : "negative"}>
+                      {row.snapshot ? `${(row.snapshot.whale_net_ratio * 100).toFixed(2)}%` : "-"}
+                    </strong>
+                  </span>
+                </span>
+              </article>
+            ))}
           </div>
-          <div>
-            <span className="alert-label">Persona</span>
-            <div className="chip-row">
-              {Object.keys(PERSONA_UI).map((item) => {
-                const personaKey = item as Persona;
-                return (
-                  <button key={item} className={`chip icon-chip ${alertPersonas.includes(personaKey) ? "active" : ""}`} onClick={() => toggleAlertPersona(personaKey)}>
-                    <PersonaIcon persona={personaKey} />
-                    <InfoTip text={personaInsight(personaKey)} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      {selectedMarket && snapshot && persona ? (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={`${selectedMarket} detail`}>
-          <section className="detail-modal">
-            <button className="modal-close" aria-label="Close detail" onClick={() => setSelectedMarket(null)}>
-              <X size={18} />
-            </button>
+      {activeMainTab === "alerts" ? (
+        <section className="alert-panel" id="alerts">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Alert</span>
+              <h2>알림 조건</h2>
+            </div>
+            <span className="timestamp">종목 + Persona 조합으로 수신</span>
+          </div>
+          <div className="alert-grid">
+            <div>
+              <span className="alert-label">종목</span>
+              <div className="chip-row">
+                {watchlist.map((item) => (
+                  <button key={item} className={`chip ${alertMarkets.includes(item) ? "active" : ""}`} onClick={() => toggleAlertMarket(item)}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="alert-label">Persona</span>
+              <div className="chip-row">
+                {Object.keys(PERSONA_UI).map((item) => {
+                  const personaKey = item as Persona;
+                  return (
+                    <button
+                      key={item}
+                      className={`chip persona-chip ${alertPersonas.includes(personaKey) ? "active" : ""}`}
+                      onClick={() => toggleAlertPersona(personaKey)}
+                      aria-label={`${personaLabel(personaKey)} 알림 조건`}
+                    >
+                      {personaLabel(personaKey)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+        </>
+      ) : null}
+
+      {detailOpen && selectedMarket && snapshot && persona ? (
+        <section className="detail-page" aria-label={`${selectedMarket} detail`}>
+          <button className="back-button" onClick={closeDetail}>
+            <ArrowLeft size={18} />
+            Watchlist
+          </button>
+          <section className="detail-header">
+            <div>
+              <span className="eyebrow">Selected detail</span>
+              <h1>{market}</h1>
+            </div>
+            <div className={`persona-title ${persona.persona}`}>
+              <PersonaIcon persona={persona.persona} />
+              <strong>{personaLabel(persona.persona)}</strong>
+            </div>
+          </section>
           <section className="metrics-grid" aria-label="Snapshot metrics">
             <Metric label="현재가" value={formatPrice(market, snapshot.price_close)} trendText={formatSignedPct(snapshot.price_change_pct)} positive={snapshot.price_change_pct >= 0} explanation="선택한 timeframe의 시작가 대비 현재 종가 변화율입니다." />
             <Metric label="거래대금" value={formatKrw(snapshot.total_volume_krw)} trendText={`x${snapshot.volume_surge_ratio.toFixed(2)}`} positive={snapshot.volume_surge_ratio >= 1} explanation="최근 window의 총 거래대금과 평소 거래대금 대비 배율입니다." />
@@ -405,7 +500,11 @@ function App() {
                 <PersonaBadge persona={persona.persona} dark />
               </div>
               <div className={`persona-badge ${persona.persona}`}>
-                <PersonaIcon persona={persona.persona} />
+                <span className="persona-badge-icon" tabIndex={0} aria-label={`${personaLabel(persona.persona)}: ${personaInsight(persona.persona)}`}>
+                  <PersonaIcon persona={persona.persona} />
+                  <span className="tooltip persona-tooltip">{personaInsight(persona.persona)}</span>
+                </span>
+                <span className="persona-badge-name">{personaLabel(persona.persona)}</span>
                 <strong>{Math.round(persona.confidence * 100)}%</strong>
                 <InfoTip text="Persona 판별 신뢰도입니다. 조건에 부합한 reason code 수가 많을수록 높아집니다." />
               </div>
@@ -427,8 +526,7 @@ function App() {
               </div>
             </aside>
           </section>
-          </section>
-        </div>
+        </section>
       ) : null}
     </main>
   );
@@ -486,9 +584,9 @@ function PersonaIcon({ persona }: { persona: Persona }) {
 
 function PersonaBadge({ persona, dark = false }: { persona: Persona; dark?: boolean }) {
   return (
-    <span className={`persona-icon ${persona} ${dark ? "dark" : ""}`}>
+    <span className={`persona-icon ${persona} ${dark ? "dark" : ""}`} tabIndex={0} aria-label={`${personaLabel(persona)}: ${personaInsight(persona)}`}>
       <PersonaIcon persona={persona} />
-      <InfoTip text={personaInsight(persona)} />
+      <span className="tooltip persona-tooltip">{personaInsight(persona)}</span>
     </span>
   );
 }

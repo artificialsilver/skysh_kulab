@@ -112,10 +112,17 @@ button {
   gap: 24px;
 }
 
-.nav a {
+.nav button {
+  border: 0;
   color: var(--ink-secondary);
+  background: transparent;
   font-size: 15px;
   text-decoration: none;
+}
+
+.nav button.active {
+  color: var(--primary-deep);
+  font-weight: 400;
 }
 
 .actions,
@@ -275,6 +282,31 @@ h1 {
 .segment button.active {
   color: var(--canvas);
   background: var(--brand-dark);
+}
+
+.main-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: 9999px;
+  background: var(--canvas);
+}
+
+.main-tabs button {
+  height: 32px;
+  border: 0;
+  border-radius: 9999px;
+  color: var(--ink-mute);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.main-tabs button.active {
+  color: var(--canvas);
+  background: var(--primary);
 }
 
 .metrics-grid,
@@ -494,16 +526,6 @@ h1 {
   background: var(--canvas-cream);
 }
 
-.persona-icon .info-tip {
-  position: absolute;
-  right: -7px;
-  bottom: -7px;
-}
-
-.persona-icon.dark .info-tip {
-  color: var(--canvas);
-}
-
 .info-tip {
   position: relative;
   display: inline-grid;
@@ -540,6 +562,30 @@ h1 {
 .info-tip:hover .tooltip,
 .info-tip:focus .tooltip,
 .info-tip:focus-within .tooltip {
+  display: block;
+}
+
+.persona-tooltip {
+  left: calc(100% + 12px);
+  bottom: 50%;
+  transform: translateY(50%);
+}
+
+.persona-icon:hover .persona-tooltip,
+.persona-icon:focus .persona-tooltip,
+.persona-icon:focus-within .persona-tooltip {
+  display: block;
+}
+
+.persona-badge-icon {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+}
+
+.persona-badge-icon:hover .persona-tooltip,
+.persona-badge-icon:focus .persona-tooltip,
+.persona-badge-icon:focus-within .persona-tooltip {
   display: block;
 }
 
@@ -661,6 +707,12 @@ h1 {
   justify-content: center;
 }
 
+.persona-chip {
+  min-width: 112px;
+  justify-content: center;
+  font-weight: 400;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -736,46 +788,54 @@ h1 {
   margin-bottom: 16px;
 }
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: grid;
-  place-items: start center;
-  overflow-y: auto;
-  background: rgba(13, 37, 61, 0.38);
-  padding: 32px 24px;
-}
-
-.detail-modal {
-  position: relative;
+.detail-page {
   display: grid;
   gap: 16px;
-  width: min(1200px, 100%);
-  border-radius: 12px;
-  background: var(--canvas);
-  padding: 24px;
-  box-shadow: rgba(0, 55, 112, 0.22) 0 18px 48px, rgba(0, 55, 112, 0.08) 0 4px 12px;
-}
-
-.detail-modal .metrics-grid,
-.detail-modal .workbench {
   width: 100%;
 }
 
-.modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
+.back-button {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--hairline);
-  border-radius: 9999px;
+  border-radius: 8px;
   color: var(--ink);
   background: var(--canvas);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--canvas);
+  padding: 22px 24px;
+  box-shadow: rgba(0, 55, 112, 0.08) 0 10px 28px;
+}
+
+.detail-header h1 {
+  margin: 4px 0 0;
+  font-size: clamp(28px, 4vw, 44px);
+}
+
+.persona-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 9999px;
+  color: var(--canvas);
+  background: var(--brand-dark);
+  padding: 10px 16px 10px 10px;
+  font-size: 15px;
+  font-weight: 900;
 }
 
 .panel {
@@ -858,8 +918,10 @@ h1 {
 }
 
 .persona-badge {
-  display: grid;
-  gap: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
   min-height: 168px;
   margin-top: 24px;
   padding: 24px;
@@ -873,8 +935,19 @@ h1 {
   font-size: 13px;
 }
 
+.persona-badge .persona-badge-name {
+  min-width: 120px;
+  color: var(--canvas);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.persona-badge .tooltip {
+  color: var(--canvas);
+}
+
 .persona-badge strong {
-  align-self: end;
+  margin-left: auto;
   font-size: 56px;
   font-weight: 300;
   line-height: 1.03;
@@ -1061,6 +1134,8 @@ h1 {
   .hero,
   .metrics-grid,
   .watchlist-section,
+  .search-panel,
+  .alert-panel,
   .workbench,
   .table-section,
   .ops-band {
@@ -1092,10 +1167,12 @@ h1 {
 
   .select-wrap,
   .select-wrap select,
+  .main-tabs,
   .segment {
     width: 100%;
   }
 
+  .main-tabs,
   .segment {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1135,7 +1212,12 @@ h1 {
     letter-spacing: 0;
   }
 
-  .detail-modal {
-    padding: 18px;
+  .detail-page {
+    gap: 12px;
+  }
+
+  .detail-header,
+  .persona-title {
+    width: 100%;
   }
 }
