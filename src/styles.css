@@ -583,6 +583,14 @@ h1 {
   background: rgba(234, 34, 97, 0.22);
 }
 
+.persona-insight {
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .reason-list {
   display: flex;
   flex-wrap: wrap;

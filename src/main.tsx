@@ -58,6 +58,10 @@ type AlertSettingResponse = {
   enabled: boolean;
 };
 
+type TickersResponse = {
+  tickers: Partial<Record<Market, { price: number }>>;
+};
+
 const markets: Market[] = ["KRW-BTC", "KRW-ETH", "KRW-XRP"];
 const timeframes: Timeframe[] = ["15m", "4h"];
 
@@ -181,6 +185,33 @@ const personas: Record<Market, Record<Timeframe, PersonaSnapshot>> = {
   },
 };
 
+const PERSONA_UI: Record<Persona, { name: string; insight: string }> = {
+  breakout: {
+    name: "폭주 기관차",
+    insight: "고래 매수세와 거래량이 함께 붙으며 가격 상승을 강하게 밀어올리는 구간입니다.",
+  },
+  panic_sell: {
+    name: "무자비한 불도저",
+    insight: "고래 매도 압력과 큰 변동성이 겹치며 하락이 빠르게 진행되는 위험 구간입니다.",
+  },
+  distribution_trap: {
+    name: "교활한 낚시꾼",
+    insight: "가격은 버티거나 오르지만 고래는 빠지고 개미가 받아내는 수급 불일치 구간입니다.",
+  },
+  accumulation: {
+    name: "심해의 진공청소기",
+    insight: "가격은 조용하지만 고래 순매수가 쌓이며 매집 가능성이 보이는 구간입니다.",
+  },
+  retail_chop: {
+    name: "시끄러운 시장통",
+    insight: "뚜렷한 주도 세력 없이 개미 수급 중심으로 짧은 등락이 반복되는 구간입니다.",
+  },
+  sleep: {
+    name: "겨울잠 자는 곰",
+    insight: "거래와 수급이 모두 잠잠해 의미 있는 방향성이 거의 보이지 않는 관망 구간입니다.",
+  },
+};
+
 const series = [42, 46, 43, 51, 57, 55, 64, 62, 68, 73, 69, 78, 82, 80, 88];
 
 function App() {
@@ -189,6 +220,7 @@ function App() {
   const [alerts, setAlerts] = React.useState(true);
   const [apiSnapshots, setApiSnapshots] = React.useState<Partial<Record<Market, Snapshot>>>({});
   const [apiPersonas, setApiPersonas] = React.useState<Partial<Record<Market, PersonaSnapshot>>>({});
+  const [tickerPrices, setTickerPrices] = React.useState<Partial<Record<Market, number>>>({});
   const [apiReady, setApiReady] = React.useState(false);
 
   React.useEffect(() => {
@@ -235,6 +267,30 @@ function App() {
   React.useEffect(() => {
     let cancelled = false;
 
+    async function loadTickers() {
+      try {
+        const response = await fetch("/api/tickers");
+        if (!response.ok) return;
+        const body = (await response.json()) as TickersResponse;
+        if (!cancelled) {
+          setTickerPrices(Object.fromEntries(markets.map((item) => [item, body.tickers[item]?.price]).filter(([, price]) => typeof price === "number")));
+        }
+      } catch {
+        if (!cancelled) setTickerPrices({});
+      }
+    }
+
+    loadTickers();
+    const timer = window.setInterval(loadTickers, 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
     async function loadAlertSetting() {
       try {
         const response = await fetch(`/api/market/${market}/alerts/settings`);
@@ -252,11 +308,11 @@ function App() {
     };
   }, [market]);
 
-  const snapshot = apiSnapshots[market] ?? snapshots[market][timeframe];
+  const snapshot = withLivePrice(market, apiSnapshots[market] ?? snapshots[market][timeframe], tickerPrices);
   const persona = apiPersonas[market] ?? personas[market][timeframe];
   const marketRows = markets.map((item) => ({
     market: item,
-    snapshot: apiSnapshots[item] ?? snapshots[item][timeframe],
+    snapshot: withLivePrice(item, apiSnapshots[item] ?? snapshots[item][timeframe], tickerPrices),
     persona: apiPersonas[item] ?? personas[item][timeframe],
   }));
 
@@ -344,7 +400,7 @@ function App() {
               <span className="watch-main">
                 <strong>{row.market}</strong>
                 <em>{personaLabel(row.persona.persona)}</em>
-                <small>{personaDescription(row.persona.persona)}</small>
+                <small>{personaInsight(row.persona.persona)}</small>
               </span>
               <span className="watch-kpis">
                 <span>
@@ -370,10 +426,10 @@ function App() {
       </section>
 
       <section className="metrics-grid" aria-label="Snapshot metrics">
-        <Metric label="현재가" value={formatPrice(market, snapshot.price_close)} delta={snapshot.price_change_pct} />
-        <Metric label="거래대금" value={formatKrw(snapshot.total_volume_krw)} delta={snapshot.volume_surge_ratio - 1} suffix="surge" />
-        <Metric label="고래 순매수" value={formatKrw(snapshot.whale_buy_krw - snapshot.whale_sell_krw)} delta={snapshot.whale_net_ratio} />
-        <Metric label="변동성" value={`${snapshot.volatility_pct.toFixed(2)}%`} delta={snapshot.volatility_pct / 10} />
+        <Metric label="현재가" value={formatPrice(market, snapshot.price_close)} trendText={formatSignedPct(snapshot.price_change_pct)} positive={snapshot.price_change_pct >= 0} />
+        <Metric label="거래대금" value={formatKrw(snapshot.total_volume_krw)} trendText={`x${snapshot.volume_surge_ratio.toFixed(2)}`} positive={snapshot.volume_surge_ratio >= 1} />
+        <Metric label="고래 순매수" value={formatKrw(snapshot.whale_buy_krw - snapshot.whale_sell_krw)} trendText={formatSignedPct(snapshot.whale_net_ratio * 100)} positive={snapshot.whale_net_ratio >= 0} />
+        <Metric label="변동성" value={`${snapshot.volatility_pct.toFixed(2)}%`} trendText={formatSignedPct(snapshot.volatility_pct)} positive={snapshot.volatility_pct >= 0} />
       </section>
 
       <section className="workbench">
@@ -403,9 +459,10 @@ function App() {
             <PersonaIcon persona={persona.persona} />
           </div>
           <div className={`persona-badge ${persona.persona}`}>
-            <span>{persona.persona}</span>
+            <span>{personaLabel(persona.persona)}</span>
             <strong>{Math.round(persona.confidence * 100)}%</strong>
           </div>
+          <p className="persona-insight">{personaInsight(persona.persona)}</p>
           <div className="reason-list">
             {persona.reason_codes.map((reason) => (
               <span key={reason}>{reason}</span>
@@ -486,13 +543,12 @@ function App() {
   );
 }
 
-function Metric({ label, value, delta, suffix }: { label: string; value: string; delta: number; suffix?: string }) {
-  const positive = delta >= 0;
+function Metric({ label, value, trendText, positive }: { label: string; value: string; trendText: string; positive: boolean }) {
   return (
     <article className="metric">
       <span>{label}</span>
       <strong>{value}</strong>
-      <em className={positive ? "positive" : "negative"}>{positive ? "+" : ""}{suffix ? delta.toFixed(2) : (delta * 100).toFixed(2)}{suffix ? ` ${suffix}` : "%"}</em>
+      <em className={positive ? "positive" : "negative"}>{trendText}</em>
     </article>
   );
 }
@@ -555,6 +611,16 @@ function formatCount(value: number) {
   return value.toLocaleString("ko-KR");
 }
 
+function formatSignedPct(value: number) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+function withLivePrice(market: Market, snapshot: Snapshot, prices: Partial<Record<Market, number>>) {
+  const livePrice = prices[market];
+  if (typeof livePrice !== "number") return snapshot;
+  return { ...snapshot, price_close: livePrice };
+}
+
 function toKst(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
@@ -567,27 +633,11 @@ function toKst(value: string) {
 }
 
 function personaLabel(value: Persona) {
-  const labels: Record<Persona, string> = {
-    accumulation: "Accumulation",
-    breakout: "Breakout",
-    distribution_trap: "Distribution trap",
-    panic_sell: "Panic sell",
-    retail_chop: "Retail chop",
-    sleep: "Sleep",
-  };
-  return labels[value];
+  return PERSONA_UI[value].name;
 }
 
-function personaDescription(value: Persona) {
-  const descriptions: Record<Persona, string> = {
-    accumulation: "고래 매수 우위가 유지되는 축적 구간",
-    breakout: "거래대금과 가격이 함께 확장되는 돌파 흐름",
-    distribution_trap: "가격 상승 중 고래 매도 압력이 커진 위험 구간",
-    panic_sell: "급락과 매도 물량이 동시에 커진 방어 구간",
-    retail_chop: "개인 흐름이 섞인 짧은 박스권",
-    sleep: "거래와 변동성이 낮은 관망 구간",
-  };
-  return descriptions[value];
+function personaInsight(value: Persona) {
+  return PERSONA_UI[value].insight;
 }
 
 createRoot(document.getElementById("root")!).render(<App />);

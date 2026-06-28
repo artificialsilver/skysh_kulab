@@ -24,7 +24,7 @@ def classify_persona(
             persona, reason_codes = result
             return _snapshot(indicator, persona, reason_codes)
 
-    return _snapshot(indicator, Persona.SLEEP, ["fallback_sleep"])
+    return _snapshot(indicator, Persona.RETAIL_CHOP, ["direction_weak", "market_noise"])
 
 
 def _snapshot(
@@ -119,17 +119,15 @@ def _retail_chop(
     indicator: IndicatorSnapshot, threshold: ThresholdConfig
 ) -> tuple[Persona, list[str]] | None:
     if (
-        abs(indicator.price_change_pct) <= threshold.price_flat
-        and indicator.volatility_pct >= threshold.volatility_mid
+        abs(indicator.price_change_pct) <= threshold.price_up
+        and indicator.volume_surge_ratio >= 1.0
+        and indicator.trade_count > 0
         and abs(indicator.whale_net_ratio) <= threshold.whale_net_weak
-        and abs(indicator.retail_net_ratio) >= threshold.retail_net_active
     ):
-        return Persona.RETAIL_CHOP, [
-            "price_flat",
-            "volatility_mid",
-            "whale_weak",
-            "retail_active",
-        ]
+        reason_codes = ["active_volume", "direction_weak", "whale_weak"]
+        if abs(indicator.retail_net_ratio) >= threshold.retail_net_active:
+            reason_codes.append("retail_active")
+        return Persona.RETAIL_CHOP, reason_codes
     return None
 
 

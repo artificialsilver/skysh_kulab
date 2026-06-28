@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.constants import MARKETS, TIMEFRAMES
+from app.market_data import fetch_upbit_tickers
 from app.pipeline import calculate_snapshots
 from app.storage import set_alert_setting, upsert_indicator_snapshot, upsert_persona_snapshot
 from indicator_persona import MinuteBucket, Timeframe
@@ -18,10 +19,11 @@ async def seed_demo_data(session: AsyncSession) -> None:
     if os.getenv("SKYSH_SEED_DEMO", "1") == "0":
         return
 
+    current_prices = _current_prices()
     for market in MARKETS:
         for timeframe in TIMEFRAMES:
             typed_timeframe: Timeframe = timeframe  # type: ignore[assignment]
-            buckets = demo_buckets(market, typed_timeframe)
+            buckets = demo_buckets(market, typed_timeframe, current_prices.get(market))
             baseline = [sum(bucket.total_volume_krw for bucket in buckets) * 0.62]
             indicator, persona = calculate_snapshots(market, typed_timeframe, buckets, baseline)
             await upsert_indicator_snapshot(session, indicator)
@@ -31,16 +33,19 @@ async def seed_demo_data(session: AsyncSession) -> None:
         await set_alert_setting(session, market, "15m", market != "KRW-ETH")
 
 
-def demo_buckets(market: str, timeframe: Timeframe) -> list[MinuteBucket]:
+def demo_buckets(
+    market: str, timeframe: Timeframe, current_price: float | None = None
+) -> list[MinuteBucket]:
     count = 15 if timeframe == "15m" else 240
     start = SNAPSHOT_END - timedelta(minutes=count)
     profile = _profile(market)
+    base = _base_for_current_close(profile, current_price)
     buckets: list[MinuteBucket] = []
 
     for index in range(count):
         progress = index / max(count - 1, 1)
         wave = ((index % 7) - 3) * profile["wave"]
-        open_price = profile["base"] * (1 + profile["drift"] * progress) + wave
+        open_price = base * (1 + profile["drift"] * progress) + wave
         close_price = open_price * (1 + profile["close_bias"])
         high = max(open_price, close_price) * (1 + profile["range"])
         low = min(open_price, close_price) * (1 - profile["range"])
@@ -70,6 +75,20 @@ def demo_buckets(market: str, timeframe: Timeframe) -> list[MinuteBucket]:
         )
 
     return buckets
+
+
+def _current_prices() -> dict[str, float]:
+    try:
+        return fetch_upbit_tickers()
+    except Exception:
+        return {}
+
+
+def _base_for_current_close(profile: dict[str, float], current_price: float | None) -> float:
+    if current_price is None or current_price <= 0:
+        return profile["base"]
+    final_wave = ((14 % 7) - 3) * profile["wave"]
+    return (current_price / (1 + profile["close_bias"]) - final_wave) / (1 + profile["drift"])
 
 
 def _profile(market: str) -> dict[str, float]:
@@ -118,4 +137,3 @@ def _profile(market: str) -> dict[str, float]:
         },
     }
     return profiles[market]
-

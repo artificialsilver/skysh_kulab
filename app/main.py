@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.constants import ALERT_TIMEFRAME, MARKETS, TIMEFRAMES
 from app.db import SessionLocal, get_session, init_db
 from app.demo_data import seed_demo_data
+from app.market_data import fetch_upbit_tickers
 from app.models import MarketIndicatorSnapshot, MarketPersonaSnapshot
 from app.schemas import AlertSettingIn, iso_z
 from app.storage import (
@@ -90,6 +91,15 @@ def persona_to_response(snapshot: MarketPersonaSnapshot) -> dict:
 @app.get("/api/markets")
 async def markets() -> dict[str, list[str]]:
     return {"markets": list(MARKETS)}
+
+
+@app.get("/api/tickers")
+async def tickers() -> dict:
+    try:
+        prices = fetch_upbit_tickers()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="ticker source unavailable") from exc
+    return {"tickers": {market: {"price": price} for market, price in prices.items()}}
 
 
 @app.get("/api/market/{market}/snapshots")
