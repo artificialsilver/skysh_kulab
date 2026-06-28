@@ -34,7 +34,30 @@ npm run dev -- --port 5173
 http://127.0.0.1:5173
 ```
 
-백엔드는 시작 시 demo snapshot을 SQLite에 seed한다. 실제 수집/Redis가 붙기 전에도 프론트는 `/api` 응답으로 관심종목 리스트와 상세 화면을 표시한다. demo seed를 끄려면 `SKYSH_SEED_DEMO=0`을 설정한다.
+기본값에서는 demo snapshot을 만들지 않는다. Redis 수집과 snapshot worker가 돌아서 SQLite에 저장한 값만 프론트에 표시된다. 임시 demo seed가 필요할 때만 `SKYSH_SEED_DEMO=1`로 백엔드를 실행한다.
+
+실제 수집부터 DB 저장까지 실행:
+
+```bash
+docker compose up -d redis
+$env:PYTHONPATH="src;."
+python -m skysh_kulab.ingestion.main run
+```
+
+다른 터미널에서 Redis bucket을 SQLite snapshot으로 저장:
+
+```bash
+$env:PYTHONPATH="src;."
+python -m app.snapshot_worker run --interval 30
+```
+
+수집/저장 상태 확인:
+
+```bash
+$env:PYTHONPATH="src;."
+python -m skysh_kulab.ingestion.main ping-redis
+python -m app.snapshot_worker once
+```
 
 ## 검증
 

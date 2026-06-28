@@ -3,17 +3,12 @@ import { createRoot } from "react-dom/client";
 import {
   AlertTriangle,
   Bell,
-  ChevronDown,
-  Database,
-  LineChart,
-  Moon,
+  Info,
+  Plus,
   RefreshCw,
   Search,
-  Settings2,
-  ShieldAlert,
-  Shuffle,
-  TrendingUp,
   Waves,
+  X,
 } from "lucide-react";
 import "./styles.css";
 
@@ -62,128 +57,14 @@ type TickersResponse = {
   tickers: Partial<Record<Market, { price: number }>>;
 };
 
+type MarketRow = {
+  market: Market;
+  snapshot?: Snapshot;
+  persona?: PersonaSnapshot;
+};
+
 const markets: Market[] = ["KRW-BTC", "KRW-ETH", "KRW-XRP"];
 const timeframes: Timeframe[] = ["15m", "4h"];
-
-const snapshots: Record<Market, Record<Timeframe, Snapshot>> = {
-  "KRW-BTC": {
-    "15m": {
-      snapshot_at: "2026-06-28T05:30:00Z",
-      price_close: 98500000,
-      price_change_pct: 1.55,
-      volatility_pct: 2.1,
-      total_volume_krw: 7200000000,
-      volume_surge_ratio: 1.8,
-      whale_buy_krw: 2600000000,
-      whale_sell_krw: 1200000000,
-      retail_buy_krw: 2100000000,
-      retail_sell_krw: 1300000000,
-      whale_net_ratio: 0.1944,
-      retail_net_ratio: 0.1111,
-      trade_count: 18420,
-      whale_count: 211,
-    },
-    "4h": {
-      snapshot_at: "2026-06-28T04:00:00Z",
-      price_close: 98240000,
-      price_change_pct: 2.84,
-      volatility_pct: 3.7,
-      total_volume_krw: 58600000000,
-      volume_surge_ratio: 1.42,
-      whale_buy_krw: 16800000000,
-      whale_sell_krw: 10400000000,
-      retail_buy_krw: 17800000000,
-      retail_sell_krw: 13600000000,
-      whale_net_ratio: 0.1092,
-      retail_net_ratio: 0.0717,
-      trade_count: 261540,
-      whale_count: 2938,
-    },
-  },
-  "KRW-ETH": {
-    "15m": {
-      snapshot_at: "2026-06-28T05:30:00Z",
-      price_close: 5420000,
-      price_change_pct: -0.62,
-      volatility_pct: 1.35,
-      total_volume_krw: 2860000000,
-      volume_surge_ratio: 1.22,
-      whale_buy_krw: 620000000,
-      whale_sell_krw: 910000000,
-      retail_buy_krw: 740000000,
-      retail_sell_krw: 590000000,
-      whale_net_ratio: -0.1014,
-      retail_net_ratio: 0.0524,
-      trade_count: 9230,
-      whale_count: 87,
-    },
-    "4h": {
-      snapshot_at: "2026-06-28T04:00:00Z",
-      price_close: 5455000,
-      price_change_pct: 0.48,
-      volatility_pct: 2.4,
-      total_volume_krw: 19400000000,
-      volume_surge_ratio: 1.08,
-      whale_buy_krw: 4200000000,
-      whale_sell_krw: 3980000000,
-      retail_buy_krw: 5730000000,
-      retail_sell_krw: 4920000000,
-      whale_net_ratio: 0.0113,
-      retail_net_ratio: 0.0417,
-      trade_count: 112830,
-      whale_count: 920,
-    },
-  },
-  "KRW-XRP": {
-    "15m": {
-      snapshot_at: "2026-06-28T05:30:00Z",
-      price_close: 725,
-      price_change_pct: -2.14,
-      volatility_pct: 3.22,
-      total_volume_krw: 4180000000,
-      volume_surge_ratio: 2.05,
-      whale_buy_krw: 610000000,
-      whale_sell_krw: 1660000000,
-      retail_buy_krw: 780000000,
-      retail_sell_krw: 1130000000,
-      whale_net_ratio: -0.2512,
-      retail_net_ratio: -0.0837,
-      trade_count: 31180,
-      whale_count: 154,
-    },
-    "4h": {
-      snapshot_at: "2026-06-28T04:00:00Z",
-      price_close: 739,
-      price_change_pct: -1.02,
-      volatility_pct: 4.12,
-      total_volume_krw: 34400000000,
-      volume_surge_ratio: 1.51,
-      whale_buy_krw: 6400000000,
-      whale_sell_krw: 8800000000,
-      retail_buy_krw: 9800000000,
-      retail_sell_krw: 9400000000,
-      whale_net_ratio: -0.0698,
-      retail_net_ratio: 0.0116,
-      trade_count: 384200,
-      whale_count: 1884,
-    },
-  },
-};
-
-const personas: Record<Market, Record<Timeframe, PersonaSnapshot>> = {
-  "KRW-BTC": {
-    "15m": { persona: "breakout", confidence: 0.82, reason_codes: ["volume_surge", "price_breakout", "whale_buy"] },
-    "4h": { persona: "accumulation", confidence: 0.68, reason_codes: ["whale_net", "steady_volume", "range_expansion"] },
-  },
-  "KRW-ETH": {
-    "15m": { persona: "retail_chop", confidence: 0.57, reason_codes: ["mixed_flow", "low_surge", "narrow_range"] },
-    "4h": { persona: "sleep", confidence: 0.61, reason_codes: ["low_volatility", "balanced_flow", "quiet_count"] },
-  },
-  "KRW-XRP": {
-    "15m": { persona: "panic_sell", confidence: 0.77, reason_codes: ["price_drop", "volume_surge", "whale_sell"] },
-    "4h": { persona: "distribution_trap", confidence: 0.64, reason_codes: ["whale_sell_bias", "high_volatility", "retail_absorption"] },
-  },
-};
 
 const PERSONA_UI: Record<Persona, { name: string; insight: string }> = {
   breakout: {
@@ -215,9 +96,12 @@ const PERSONA_UI: Record<Persona, { name: string; insight: string }> = {
 const series = [42, 46, 43, 51, 57, 55, 64, 62, 68, 73, 69, 78, 82, 80, 88];
 
 function App() {
-  const [market, setMarket] = React.useState<Market>("KRW-BTC");
+  const [selectedMarket, setSelectedMarket] = React.useState<Market | null>(null);
+  const [watchlist, setWatchlist] = React.useState<Market[]>(markets);
   const [timeframe, setTimeframe] = React.useState<Timeframe>("15m");
-  const [alerts, setAlerts] = React.useState(true);
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [alertMarkets, setAlertMarkets] = React.useState<Market[]>(["KRW-BTC"]);
+  const [alertPersonas, setAlertPersonas] = React.useState<Persona[]>(["breakout", "panic_sell", "distribution_trap"]);
   const [apiSnapshots, setApiSnapshots] = React.useState<Partial<Record<Market, Snapshot>>>({});
   const [apiPersonas, setApiPersonas] = React.useState<Partial<Record<Market, PersonaSnapshot>>>({});
   const [tickerPrices, setTickerPrices] = React.useState<Partial<Record<Market, number>>>({});
@@ -288,46 +172,36 @@ function App() {
     };
   }, []);
 
-  React.useEffect(() => {
-    let cancelled = false;
-
-    async function loadAlertSetting() {
-      try {
-        const response = await fetch(`/api/market/${market}/alerts/settings`);
-        if (!response.ok) return;
-        const body = (await response.json()) as AlertSettingResponse;
-        if (!cancelled) setAlerts(body.enabled);
-      } catch {
-        if (!cancelled) setAlerts(true);
-      }
-    }
-
-    loadAlertSetting();
-    return () => {
-      cancelled = true;
-    };
-  }, [market]);
-
-  const snapshot = withLivePrice(market, apiSnapshots[market] ?? snapshots[market][timeframe], tickerPrices);
-  const persona = apiPersonas[market] ?? personas[market][timeframe];
-  const marketRows = markets.map((item) => ({
+  const market = selectedMarket ?? watchlist[0] ?? "KRW-BTC";
+  const snapshot = apiSnapshots[market] ? withLivePrice(market, apiSnapshots[market], tickerPrices) : undefined;
+  const persona = apiPersonas[market];
+  const marketRows: MarketRow[] = watchlist.map((item) => ({
     market: item,
-    snapshot: withLivePrice(item, apiSnapshots[item] ?? snapshots[item][timeframe], tickerPrices),
-    persona: apiPersonas[item] ?? personas[item][timeframe],
+    snapshot: apiSnapshots[item] ? withLivePrice(item, apiSnapshots[item], tickerPrices) : undefined,
+    persona: apiPersonas[item],
   }));
 
-  async function toggleAlertSetting() {
-    const nextValue = !alerts;
-    setAlerts(nextValue);
-    try {
-      await fetch(`/api/market/${market}/alerts/settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ timeframe: "15m", enabled: nextValue }),
-      });
-    } catch {
-      setAlerts(!nextValue);
-    }
+  function addWatchMarket(nextMarket: Market) {
+    if (watchlist.includes(nextMarket) || watchlist.length >= 3) return;
+    setWatchlist((items) => [...items, nextMarket]);
+  }
+
+  function removeWatchMarket(nextMarket: Market) {
+    setWatchlist((items) => items.filter((item) => item !== nextMarket));
+    if (selectedMarket === nextMarket) setSelectedMarket(null);
+    setAlertMarkets((items) => items.filter((item) => item !== nextMarket));
+  }
+
+  function toggleAlertMarket(nextMarket: Market) {
+    setAlertMarkets((items) =>
+      items.includes(nextMarket) ? items.filter((item) => item !== nextMarket) : [...items, nextMarket],
+    );
+  }
+
+  function toggleAlertPersona(nextPersona: Persona) {
+    setAlertPersonas((items) =>
+      items.includes(nextPersona) ? items.filter((item) => item !== nextPersona) : [...items, nextPersona],
+    );
   }
 
   return (
@@ -339,12 +213,11 @@ function App() {
           <span>SkySH</span>
         </div>
         <nav className="nav">
-          <a href="#market">Market</a>
-          <a href="#persona">Persona</a>
+          <a href="#watchlist">Watchlist</a>
           <a href="#alerts">Alerts</a>
         </nav>
         <div className="actions">
-          <button className="icon-button" aria-label="Search">
+          <button className="icon-button" aria-label="Search" onClick={() => setSearchOpen((value) => !value)}>
             <Search size={18} />
           </button>
           <button className="primary-button">
@@ -354,21 +227,13 @@ function App() {
         </div>
       </header>
 
-      <section className="hero" id="market">
+      <section className="hero" id="watchlist">
         <div>
           <span className="tag">UTC snapshot · KST display</span>
           <h1>Watchlist console</h1>
           <p className="lead">등록된 관심종목의 Persona와 핵심 흐름을 먼저 보고, 종목을 선택해 지표 상세를 확인합니다.</p>
         </div>
         <div className="hero-controls" aria-label="Market controls">
-          <div className="select-wrap">
-            <select value={market} onChange={(event) => setMarket(event.target.value as Market)}>
-              {markets.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} />
-          </div>
           <div className="segment">
             {timeframes.map((item) => (
               <button key={item} className={item === timeframe ? "active" : ""} onClick={() => setTimeframe(item)}>
@@ -378,6 +243,31 @@ function App() {
           </div>
         </div>
       </section>
+
+      {searchOpen ? (
+        <section className="search-panel" aria-label="Search watchlist market">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Search</span>
+              <h2>관심종목 추가</h2>
+            </div>
+            <span className="timestamp">v1에서는 3개 마켓만 등록 가능</span>
+          </div>
+          <div className="search-list">
+            {markets.map((item) => {
+              const registered = watchlist.includes(item);
+              const disabled = registered || watchlist.length >= 3;
+              return (
+                <button key={item} className="search-row" disabled={disabled} onClick={() => addWatchMarket(item)}>
+                  <span>{item}</span>
+                  <em>{registered ? "등록됨" : watchlist.length >= 3 ? "최대 3개" : "추가 가능"}</em>
+                  <Plus size={16} />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <section className="watchlist-section" aria-label="Registered watchlist">
         <div className="section-head">
@@ -389,164 +279,165 @@ function App() {
         </div>
         <div className="watchlist-grid">
           {marketRows.map((row) => (
-            <button
+            <article
               key={row.market}
-              className={`watch-card ${row.market === market ? "selected" : ""}`}
-              onClick={() => setMarket(row.market)}
+              className={`watch-card ${row.market === market ? "selected" : ""} ${!row.snapshot || !row.persona ? "empty" : ""}`}
+              onClick={() => {
+                if (row.snapshot && row.persona) setSelectedMarket(row.market);
+              }}
+              onKeyDown={(event) => {
+                if ((event.key === "Enter" || event.key === " ") && row.snapshot && row.persona) setSelectedMarket(row.market);
+              }}
+              role="button"
+              tabIndex={0}
             >
-              <span className={`persona-icon ${row.persona.persona}`}>
-                <PersonaIcon persona={row.persona.persona} />
-              </span>
+              <button
+                className="delete-watch"
+                aria-label={`${row.market} delete`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  removeWatchMarket(row.market);
+                }}
+              >
+                <X size={14} />
+              </button>
+              {row.persona ? <PersonaBadge persona={row.persona.persona} /> : <span className="persona-icon empty"><Waves size={18} /></span>}
               <span className="watch-main">
                 <strong>{row.market}</strong>
-                <em>{personaLabel(row.persona.persona)}</em>
-                <small>{personaInsight(row.persona.persona)}</small>
+                <small>{row.persona ? personaInsight(row.persona.persona) : "Redis bucket과 DB snapshot이 아직 없습니다."}</small>
               </span>
               <span className="watch-kpis">
                 <span>
                   <small>현재가</small>
-                  <strong>{formatPrice(row.market, row.snapshot.price_close)}</strong>
+                  <strong>{row.snapshot ? formatPrice(row.market, row.snapshot.price_close) : formatOptionalPrice(row.market, tickerPrices[row.market])}</strong>
                 </span>
                 <span>
                   <small>변화율</small>
-                  <strong className={row.snapshot.price_change_pct >= 0 ? "positive" : "negative"}>
-                    {row.snapshot.price_change_pct.toFixed(2)}%
+                  <strong className={row.snapshot && row.snapshot.price_change_pct >= 0 ? "positive" : "negative"}>
+                    {row.snapshot ? `${row.snapshot.price_change_pct.toFixed(2)}%` : "-"}
                   </strong>
                 </span>
                 <span>
                   <small>고래 순매수</small>
-                  <strong className={row.snapshot.whale_net_ratio >= 0 ? "positive" : "negative"}>
-                    {(row.snapshot.whale_net_ratio * 100).toFixed(2)}%
+                  <strong className={row.snapshot && row.snapshot.whale_net_ratio >= 0 ? "positive" : "negative"}>
+                    {row.snapshot ? `${(row.snapshot.whale_net_ratio * 100).toFixed(2)}%` : "-"}
                   </strong>
                 </span>
               </span>
-            </button>
+            </article>
           ))}
         </div>
       </section>
 
-      <section className="metrics-grid" aria-label="Snapshot metrics">
-        <Metric label="현재가" value={formatPrice(market, snapshot.price_close)} trendText={formatSignedPct(snapshot.price_change_pct)} positive={snapshot.price_change_pct >= 0} />
-        <Metric label="거래대금" value={formatKrw(snapshot.total_volume_krw)} trendText={`x${snapshot.volume_surge_ratio.toFixed(2)}`} positive={snapshot.volume_surge_ratio >= 1} />
-        <Metric label="고래 순매수" value={formatKrw(snapshot.whale_buy_krw - snapshot.whale_sell_krw)} trendText={formatSignedPct(snapshot.whale_net_ratio * 100)} positive={snapshot.whale_net_ratio >= 0} />
-        <Metric label="변동성" value={`${snapshot.volatility_pct.toFixed(2)}%`} trendText={formatSignedPct(snapshot.volatility_pct)} positive={snapshot.volatility_pct >= 0} />
-      </section>
-
-      <section className="workbench">
-        <div className="panel chart-panel">
-          <div className="panel-head">
-            <div>
-              <span className="eyebrow">Selected detail</span>
-              <h2>{market} · {timeframe} 상세</h2>
-            </div>
-            <span className="timestamp">{toKst(snapshot.snapshot_at)}</span>
-          </div>
-          <Chart />
-          <div className="flow-grid">
-            <Flow label="Whale buy" value={snapshot.whale_buy_krw} tone="buy" />
-            <Flow label="Whale sell" value={snapshot.whale_sell_krw} tone="sell" />
-            <Flow label="Retail buy" value={snapshot.retail_buy_krw} tone="buy" />
-            <Flow label="Retail sell" value={snapshot.retail_sell_krw} tone="sell" />
-          </div>
-        </div>
-
-        <aside className="panel persona-panel" id="persona">
-          <div className="panel-head compact">
-            <div>
-              <span className="eyebrow">PersonaSnapshot</span>
-              <h2>{personaLabel(persona.persona)}</h2>
-            </div>
-            <PersonaIcon persona={persona.persona} />
-          </div>
-          <div className={`persona-badge ${persona.persona}`}>
-            <span>{personaLabel(persona.persona)}</span>
-            <strong>{Math.round(persona.confidence * 100)}%</strong>
-          </div>
-          <p className="persona-insight">{personaInsight(persona.persona)}</p>
-          <div className="reason-list">
-            {persona.reason_codes.map((reason) => (
-              <span key={reason}>{reason}</span>
-            ))}
-          </div>
-          <div className="persona-stats">
-            <div>
-              <span>Trade count</span>
-              <strong>{formatCount(snapshot.trade_count)}</strong>
-            </div>
-            <div>
-              <span>Whale count</span>
-              <strong>{formatCount(snapshot.whale_count)}</strong>
-            </div>
-          </div>
-        </aside>
-      </section>
-
-      <section className="table-section">
+      <section className="alert-panel" id="alerts">
         <div className="section-head">
           <div>
-            <span className="eyebrow">Core board</span>
-            <h2>관심종목 핵심 정보</h2>
+            <span className="eyebrow">Alert</span>
+            <h2>알림 조건</h2>
           </div>
-          <button className="secondary-button">
-            <LineChart size={16} />
-            Export
-          </button>
+          <span className="timestamp">종목 + Persona 조합으로 수신</span>
         </div>
-        <div className="data-table">
-          <div className="table-row table-head">
-            <span>Market</span>
-            <span>Persona</span>
-            <span>Price</span>
-            <span>Change</span>
-            <span>Volume</span>
-            <span>Whale net</span>
+        <div className="alert-grid">
+          <div>
+            <span className="alert-label">종목</span>
+            <div className="chip-row">
+              {watchlist.map((item) => (
+                <button key={item} className={`chip ${alertMarkets.includes(item) ? "active" : ""}`} onClick={() => toggleAlertMarket(item)}>
+                  {item}
+                </button>
+              ))}
+            </div>
           </div>
-          {marketRows.map((row) => (
-            <button key={row.market} className="table-row" onClick={() => setMarket(row.market)}>
-              <span className="market-cell">
-                <PersonaIcon persona={row.persona.persona} />
-                {row.market}
-              </span>
-              <span>{personaLabel(row.persona.persona)}</span>
-              <span className="num">{formatPrice(row.market, row.snapshot.price_close)}</span>
-              <span className={`num ${row.snapshot.price_change_pct >= 0 ? "positive" : "negative"}`}>
-                {row.snapshot.price_change_pct.toFixed(2)}%
-              </span>
-              <span className="num">{formatKrw(row.snapshot.total_volume_krw)}</span>
-              <span className={`num ${row.snapshot.whale_net_ratio >= 0 ? "positive" : "negative"}`}>
-                {(row.snapshot.whale_net_ratio * 100).toFixed(2)}%
-              </span>
-            </button>
-          ))}
+          <div>
+            <span className="alert-label">Persona</span>
+            <div className="chip-row">
+              {Object.keys(PERSONA_UI).map((item) => {
+                const personaKey = item as Persona;
+                return (
+                  <button key={item} className={`chip icon-chip ${alertPersonas.includes(personaKey) ? "active" : ""}`} onClick={() => toggleAlertPersona(personaKey)}>
+                    <PersonaIcon persona={personaKey} />
+                    <InfoTip text={personaInsight(personaKey)} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="ops-band" id="alerts">
-        <div className="ops-copy">
-          <span className="tag">Pipeline status</span>
-          <h2>15m 알림은 Persona 계산과 분리되어 발송 대상에서만 적용됩니다.</h2>
+      {selectedMarket && snapshot && persona ? (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={`${selectedMarket} detail`}>
+          <section className="detail-modal">
+            <button className="modal-close" aria-label="Close detail" onClick={() => setSelectedMarket(null)}>
+              <X size={18} />
+            </button>
+          <section className="metrics-grid" aria-label="Snapshot metrics">
+            <Metric label="현재가" value={formatPrice(market, snapshot.price_close)} trendText={formatSignedPct(snapshot.price_change_pct)} positive={snapshot.price_change_pct >= 0} explanation="선택한 timeframe의 시작가 대비 현재 종가 변화율입니다." />
+            <Metric label="거래대금" value={formatKrw(snapshot.total_volume_krw)} trendText={`x${snapshot.volume_surge_ratio.toFixed(2)}`} positive={snapshot.volume_surge_ratio >= 1} explanation="최근 window의 총 거래대금과 평소 거래대금 대비 배율입니다." />
+            <Metric label="고래 순매수" value={formatKrw(snapshot.whale_buy_krw - snapshot.whale_sell_krw)} trendText={formatSignedPct(snapshot.whale_net_ratio * 100)} positive={snapshot.whale_net_ratio >= 0} explanation="고래 매수 금액에서 고래 매도 금액을 뺀 값입니다." />
+            <Metric label="변동성" value={`${snapshot.volatility_pct.toFixed(2)}%`} trendText={formatSignedPct(snapshot.volatility_pct)} positive={snapshot.volatility_pct >= 0} explanation="window 내 고가와 저가의 가격 흔들림 비율입니다." />
+          </section>
+
+          <section className="workbench">
+            <div className="panel chart-panel">
+              <div className="panel-head">
+                <div>
+                  <span className="eyebrow">Selected detail</span>
+                  <h2>{market} · {timeframe} 상세</h2>
+                </div>
+                <span className="timestamp">{toKst(snapshot.snapshot_at)}</span>
+              </div>
+              <Chart />
+              <div className="flow-grid">
+                <Flow label="Whale buy" value={snapshot.whale_buy_krw} tone="buy" explanation="고래로 분류된 체결의 매수 금액입니다." />
+                <Flow label="Whale sell" value={snapshot.whale_sell_krw} tone="sell" explanation="고래로 분류된 체결의 매도 금액입니다." />
+                <Flow label="Retail buy" value={snapshot.retail_buy_krw} tone="buy" explanation="개인으로 분류된 체결의 매수 금액입니다." />
+                <Flow label="Retail sell" value={snapshot.retail_sell_krw} tone="sell" explanation="개인으로 분류된 체결의 매도 금액입니다." />
+              </div>
+            </div>
+
+            <aside className="panel persona-panel" id="persona">
+              <div className="panel-head compact">
+                <div>
+                  <span className="eyebrow">PersonaSnapshot</span>
+                  <h2>{market}</h2>
+                </div>
+                <PersonaBadge persona={persona.persona} dark />
+              </div>
+              <div className={`persona-badge ${persona.persona}`}>
+                <PersonaIcon persona={persona.persona} />
+                <strong>{Math.round(persona.confidence * 100)}%</strong>
+                <InfoTip text="Persona 판별 신뢰도입니다. 조건에 부합한 reason code 수가 많을수록 높아집니다." />
+              </div>
+              <p className="persona-insight">{personaInsight(persona.persona)}</p>
+              <div className="reason-list">
+                {persona.reason_codes.map((reason) => (
+                  <span key={reason}>{reason}</span>
+                ))}
+              </div>
+              <div className="persona-stats">
+                <div>
+                  <span>Trade count <InfoTip text="선택한 timeframe 안에서 집계된 총 체결 횟수입니다." /></span>
+                  <strong>{formatCount(snapshot.trade_count)}</strong>
+                </div>
+                <div>
+                  <span>Whale count <InfoTip text="선택한 timeframe 안에서 고래 기준을 넘긴 체결 횟수입니다." /></span>
+                  <strong>{formatCount(snapshot.whale_count)}</strong>
+                </div>
+              </div>
+            </aside>
+          </section>
+          </section>
         </div>
-        <div className="ops-items">
-          <Status icon={<Waves size={18} />} label="Upbit stream" value="collection ready" />
-          <Status icon={<Database size={18} />} label="API source" value={apiReady ? "FastAPI" : "mock fallback"} />
-          <label className="toggle">
-            <Bell size={18} />
-            <span>15m alert</span>
-            <input type="checkbox" checked={alerts} onChange={toggleAlertSetting} />
-          </label>
-          <button className="icon-button" aria-label="Settings">
-            <Settings2 size={18} />
-          </button>
-        </div>
-      </section>
+      ) : null}
     </main>
   );
 }
 
-function Metric({ label, value, trendText, positive }: { label: string; value: string; trendText: string; positive: boolean }) {
+function Metric({ label, value, trendText, positive, explanation }: { label: string; value: string; trendText: string; positive: boolean; explanation: string }) {
   return (
     <article className="metric">
-      <span>{label}</span>
+      <span>{label} <InfoTip text={explanation} /></span>
       <strong>{value}</strong>
       <em className={positive ? "positive" : "negative"}>{trendText}</em>
     </article>
@@ -565,10 +456,10 @@ function Chart() {
   );
 }
 
-function Flow({ label, value, tone }: { label: string; value: number; tone: "buy" | "sell" }) {
+function Flow({ label, value, tone, explanation }: { label: string; value: number; tone: "buy" | "sell"; explanation: string }) {
   return (
     <div className="flow-item">
-      <span>{label}</span>
+      <span>{label} <InfoTip text={explanation} /></span>
       <strong className={tone === "buy" ? "positive" : "negative"}>{formatKrw(value)}</strong>
     </div>
   );
@@ -585,13 +476,30 @@ function Status({ icon, label, value }: { icon: React.ReactNode; label: string; 
 }
 
 function PersonaIcon({ persona }: { persona: Persona }) {
-  const size = 18;
-  if (persona === "breakout") return <TrendingUp size={size} />;
-  if (persona === "accumulation") return <ShieldAlert size={size} />;
-  if (persona === "distribution_trap") return <AlertTriangle size={size} />;
-  if (persona === "panic_sell") return <AlertTriangle size={size} />;
-  if (persona === "retail_chop") return <Shuffle size={size} />;
-  return <Moon size={size} />;
+  if (persona === "breakout") return <span className="shape-icon train" aria-hidden="true"><span /></span>;
+  if (persona === "panic_sell") return <span className="shape-icon bulldozer" aria-hidden="true"><span /></span>;
+  if (persona === "distribution_trap") return <span className="shape-icon fisher" aria-hidden="true"><span /></span>;
+  if (persona === "accumulation") return <span className="shape-icon vacuum" aria-hidden="true"><span /></span>;
+  if (persona === "retail_chop") return <span className="shape-icon market" aria-hidden="true"><span /></span>;
+  return <span className="shape-icon bear" aria-hidden="true"><span /></span>;
+}
+
+function PersonaBadge({ persona, dark = false }: { persona: Persona; dark?: boolean }) {
+  return (
+    <span className={`persona-icon ${persona} ${dark ? "dark" : ""}`}>
+      <PersonaIcon persona={persona} />
+      <InfoTip text={personaInsight(persona)} />
+    </span>
+  );
+}
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="info-tip" tabIndex={0} aria-label={text}>
+      <Info size={13} />
+      <span className="tooltip">{text}</span>
+    </span>
+  );
 }
 
 function formatKrw(value: number) {
@@ -605,6 +513,11 @@ function formatKrw(value: number) {
 function formatPrice(market: Market, value: number) {
   if (market === "KRW-XRP") return `${value.toLocaleString("ko-KR")}원`;
   return `${Math.round(value).toLocaleString("ko-KR")}원`;
+}
+
+function formatOptionalPrice(market: Market, value?: number) {
+  if (typeof value !== "number") return "-";
+  return formatPrice(market, value);
 }
 
 function formatCount(value: number) {

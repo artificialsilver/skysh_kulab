@@ -16,7 +16,7 @@ SNAPSHOT_END = datetime(2026, 6, 28, 5, 30, tzinfo=UTC)
 
 
 async def seed_demo_data(session: AsyncSession) -> None:
-    if os.getenv("SKYSH_SEED_DEMO", "1") == "0":
+    if os.getenv("SKYSH_SEED_DEMO", "0") != "1":
         return
 
     current_prices = _current_prices()
