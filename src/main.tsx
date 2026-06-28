@@ -9,6 +9,12 @@ import {
   X,
 } from "lucide-react";
 import "./styles.css";
+import accumulationImage from "./assets/personas/accumulation.png";
+import breakoutImage from "./assets/personas/breakout.png";
+import distributionTrapImage from "./assets/personas/distribution-trap.png";
+import panicSellImage from "./assets/personas/panic-sell.png";
+import retailChopImage from "./assets/personas/retail-chop.png";
+import sleepImage from "./assets/personas/sleep.png";
 
 type Market = "KRW-BTC" | "KRW-ETH" | "KRW-XRP";
 type Timeframe = "15m" | "4h";
@@ -100,6 +106,15 @@ const PERSONA_UI: Record<Persona, { name: string; insight: string }> = {
     name: "겨울잠 자는 곰",
     insight: "거래와 수급이 모두 잠잠해 의미 있는 방향성이 거의 보이지 않는 관망 구간입니다.",
   },
+};
+
+const PERSONA_IMAGES: Partial<Record<Persona, string>> = {
+  accumulation: accumulationImage,
+  breakout: breakoutImage,
+  distribution_trap: distributionTrapImage,
+  panic_sell: panicSellImage,
+  retail_chop: retailChopImage,
+  sleep: sleepImage,
 };
 
 const series = [42, 46, 43, 51, 57, 55, 64, 62, 68, 73, 69, 78, 82, 80, 88];
@@ -490,9 +505,9 @@ function App() {
                 <Flow label="Retail sell" value={snapshot.retail_sell_krw} tone="sell" explanation="개인으로 분류된 체결의 매도 금액입니다." />
               </div>
               <div className="classification-note">
-                <strong>고래 / 개미 분류 기준</strong>
-                <p>체결금액이 서버 기준값 이상이면 고래, 그 미만이면 개미로 분류합니다. 현재 기본값은 1,000만원이며, 서버의 <code>WHALE_THRESHOLD_KRW</code> 환경변수로 바꿀 수 있습니다.</p>
-                <p>Upbit 체결 데이터에서 <code>BID</code>는 매수, <code>ASK</code>는 매도로 집계합니다. 그래서 최근 구간의 고래 체결이 매도 방향뿐이면 Whale buy가 0으로 표시될 수 있습니다.</p>
+                <strong>고래 / 개미는 이렇게 나눠요</strong>
+                <p>한 번에 약 1,000만원 이상 체결된 거래는 큰손의 움직임으로 보고 고래 흐름에 넣습니다. 그보다 작은 체결은 일반 참여자의 흐름으로 보고 개미 흐름에 넣습니다.</p>
+                <p>매수 쪽에서 체결되면 buy, 매도 쪽에서 체결되면 sell로 더합니다. 그래서 최근 구간에 큰손 매수 체결이 없고 큰손 매도 체결만 있으면 Whale buy가 0으로 보일 수 있습니다.</p>
               </div>
             </div>
 
@@ -504,20 +519,7 @@ function App() {
                 </div>
                 <PersonaBadge persona={persona.persona} dark />
               </div>
-              <div className={`persona-badge detail-tooltip ${persona.persona}`} data-tooltip="Persona 판별 신뢰도입니다. 조건에 부합한 reason code 수가 많을수록 높아집니다.">
-                <span className="persona-badge-icon" tabIndex={0} aria-label={`${personaLabel(persona.persona)}: ${personaInsight(persona.persona)}`}>
-                  <PersonaIcon persona={persona.persona} />
-                  <span className="tooltip persona-tooltip">{personaInsight(persona.persona)}</span>
-                </span>
-                <span className="persona-badge-name">{personaLabel(persona.persona)}</span>
-                <strong>{Math.round(persona.confidence * 100)}%</strong>
-              </div>
-              <p className="persona-insight">{personaInsight(persona.persona)}</p>
-              <div className="reason-list">
-                {persona.reason_codes.map((reason) => (
-                  <span key={reason}>{reason}</span>
-                ))}
-              </div>
+              <PersonaSnapshotImage persona={persona.persona} />
               <div className="persona-stats">
                 <div className="detail-tooltip" data-tooltip="선택한 timeframe 안에서 집계된 총 체결 횟수입니다.">
                   <span>Trade count</span>
@@ -563,6 +565,21 @@ function Flow({ label, value, tone, explanation }: { label: string; value: numbe
     <div className="flow-item detail-tooltip" data-tooltip={explanation}>
       <span>{label}</span>
       <strong className={tone === "buy" ? "positive" : "negative"}>{formatKrw(value)}</strong>
+    </div>
+  );
+}
+
+function PersonaSnapshotImage({ persona }: { persona: Persona }) {
+  const image = PERSONA_IMAGES[persona];
+  if (image) {
+    return <img className="persona-snapshot-image" src={image} alt={personaLabel(persona)} />;
+  }
+
+  return (
+    <div className={`persona-image-fallback ${persona}`}>
+      <PersonaIcon persona={persona} />
+      <strong>{personaLabel(persona)}</strong>
+      <p>{personaInsight(persona)}</p>
     </div>
   );
 }
