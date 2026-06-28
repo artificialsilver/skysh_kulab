@@ -559,9 +559,7 @@ h1 {
   pointer-events: none;
 }
 
-.info-tip:hover .tooltip,
-.info-tip:focus .tooltip,
-.info-tip:focus-within .tooltip {
+.info-tip:hover .tooltip {
   display: block;
 }
 
@@ -571,9 +569,7 @@ h1 {
   transform: translateY(50%);
 }
 
-.persona-icon:hover .persona-tooltip,
-.persona-icon:focus .persona-tooltip,
-.persona-icon:focus-within .persona-tooltip {
+.persona-icon:hover .persona-tooltip {
   display: block;
 }
 
@@ -583,9 +579,7 @@ h1 {
   width: fit-content;
 }
 
-.persona-badge-icon:hover .persona-tooltip,
-.persona-badge-icon:focus .persona-tooltip,
-.persona-badge-icon:focus-within .persona-tooltip {
+.persona-badge-icon:hover .persona-tooltip {
   display: block;
 }
 
@@ -708,9 +702,35 @@ h1 {
 }
 
 .persona-chip {
+  position: relative;
   min-width: 112px;
   justify-content: center;
   font-weight: 400;
+}
+
+.persona-chip::after {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: none;
+  content: attr(data-tooltip);
+  width: min(280px, 70vw);
+  transform: translateX(-50%);
+  border-radius: 8px;
+  color: var(--canvas);
+  background: var(--brand-dark);
+  box-shadow: rgba(0, 55, 112, 0.18) 0 8px 24px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.45;
+  text-align: left;
+  pointer-events: none;
+}
+
+.persona-chip:hover::after {
+  display: block;
 }
 
 .metrics-grid {

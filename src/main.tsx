@@ -435,6 +435,7 @@ function App() {
                     <button
                       key={item}
                       className={`chip persona-chip ${alertPersonas.includes(personaKey) ? "active" : ""}`}
+                      data-tooltip={personaInsight(personaKey)}
                       onClick={() => toggleAlertPersona(personaKey)}
                       aria-label={`${personaLabel(personaKey)} 알림 조건`}
                     >
