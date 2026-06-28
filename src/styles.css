@@ -112,17 +112,10 @@ button {
   gap: 24px;
 }
 
-.nav button {
-  border: 0;
+.nav a {
   color: var(--ink-secondary);
-  background: transparent;
   font-size: 15px;
   text-decoration: none;
-}
-
-.nav button.active {
-  color: var(--primary-deep);
-  font-weight: 400;
 }
 
 .actions,
@@ -282,31 +275,6 @@ h1 {
 .segment button.active {
   color: var(--canvas);
   background: var(--brand-dark);
-}
-
-.main-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(92px, 1fr));
-  padding: 3px;
-  border: 1px solid var(--hairline);
-  border-radius: 9999px;
-  background: var(--canvas);
-}
-
-.main-tabs button {
-  height: 32px;
-  border: 0;
-  border-radius: 9999px;
-  color: var(--ink-mute);
-  background: transparent;
-  font-size: 14px;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.main-tabs button.active {
-  color: var(--canvas);
-  background: var(--primary);
 }
 
 .metrics-grid,
@@ -526,6 +494,16 @@ h1 {
   background: var(--canvas-cream);
 }
 
+.persona-icon .info-tip {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+}
+
+.persona-icon.dark .info-tip {
+  color: var(--canvas);
+}
+
 .info-tip {
   position: relative;
   display: inline-grid;
@@ -562,30 +540,6 @@ h1 {
 .info-tip:hover .tooltip,
 .info-tip:focus .tooltip,
 .info-tip:focus-within .tooltip {
-  display: block;
-}
-
-.persona-tooltip {
-  left: calc(100% + 12px);
-  bottom: 50%;
-  transform: translateY(50%);
-}
-
-.persona-icon:hover .persona-tooltip,
-.persona-icon:focus .persona-tooltip,
-.persona-icon:focus-within .persona-tooltip {
-  display: block;
-}
-
-.persona-badge-icon {
-  position: relative;
-  display: inline-flex;
-  width: fit-content;
-}
-
-.persona-badge-icon:hover .persona-tooltip,
-.persona-badge-icon:focus .persona-tooltip,
-.persona-badge-icon:focus-within .persona-tooltip {
   display: block;
 }
 
@@ -705,12 +659,6 @@ h1 {
 .icon-chip {
   width: 48px;
   justify-content: center;
-}
-
-.persona-chip {
-  min-width: 112px;
-  justify-content: center;
-  font-weight: 400;
 }
 
 .metrics-grid {
@@ -925,10 +873,6 @@ h1 {
   font-size: 13px;
 }
 
-.persona-badge .tooltip {
-  color: var(--canvas);
-}
-
 .persona-badge strong {
   align-self: end;
   font-size: 56px;
@@ -1117,8 +1061,6 @@ h1 {
   .hero,
   .metrics-grid,
   .watchlist-section,
-  .search-panel,
-  .alert-panel,
   .workbench,
   .table-section,
   .ops-band {
@@ -1150,12 +1092,10 @@ h1 {
 
   .select-wrap,
   .select-wrap select,
-  .main-tabs,
   .segment {
     width: 100%;
   }
 
-  .main-tabs,
   .segment {
     grid-template-columns: repeat(2, 1fr);
   }
