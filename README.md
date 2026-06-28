@@ -34,6 +34,22 @@ npm run dev -- --port 5173
 http://127.0.0.1:5173
 ```
 
+Windows에서 한 번에 실행:
+
+```cmd
+run_all.cmd
+```
+
+개별 실행:
+
+```cmd
+run_redis.cmd
+run_ingestion.cmd
+run_snapshot_worker.cmd
+run_backend.cmd
+run_frontend.cmd
+```
+
 기본값에서는 demo snapshot을 만들지 않는다. Redis 수집과 snapshot worker가 돌아서 SQLite에 저장한 값만 프론트에 표시된다. 임시 demo seed가 필요할 때만 `SKYSH_SEED_DEMO=1`로 백엔드를 실행한다.
 
 실제 수집부터 DB 저장까지 실행:
@@ -42,7 +58,6 @@ PowerShell:
 
 ```powershell
 docker compose up -d redis
-$env:PYTHONPATH="src;."
 python -m skysh_kulab.ingestion.main run
 ```
 
@@ -50,7 +65,7 @@ Git Bash:
 
 ```bash
 docker compose up -d redis
-PYTHONPATH="src:." python -m skysh_kulab.ingestion.main run
+python -m skysh_kulab.ingestion.main run
 ```
 
 다른 터미널에서 Redis bucket을 SQLite snapshot으로 저장:
@@ -58,7 +73,6 @@ PYTHONPATH="src:." python -m skysh_kulab.ingestion.main run
 PowerShell:
 
 ```powershell
-$env:PYTHONPATH="src;."
 python -m app.snapshot_worker run --interval 30
 ```
 
@@ -73,7 +87,6 @@ python -m app.snapshot_worker run --interval 30
 PowerShell:
 
 ```powershell
-$env:PYTHONPATH="src;."
 python -m skysh_kulab.ingestion.main ping-redis
 python -m app.snapshot_worker once
 ```
@@ -81,9 +94,11 @@ python -m app.snapshot_worker once
 Git Bash:
 
 ```bash
-PYTHONPATH="src:." python -m skysh_kulab.ingestion.main ping-redis
+python -m skysh_kulab.ingestion.main ping-redis
 python -m app.snapshot_worker once
 ```
+
+루트 패키지 shim이 `src/skysh_kulab`를 자동으로 연결하므로 repo root에서는 별도 `PYTHONPATH` 없이 실행된다.
 
 ## 검증
 
