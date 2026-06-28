@@ -1,1 +1,0 @@
-# skysh_kulab
