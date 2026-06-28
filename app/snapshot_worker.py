@@ -3,7 +3,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import sys
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+SRC_DIR = ROOT_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 from app.constants import MARKETS, TIMEFRAMES
 from app.db import SessionLocal, init_db

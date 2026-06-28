@@ -38,24 +38,50 @@ http://127.0.0.1:5173
 
 실제 수집부터 DB 저장까지 실행:
 
-```bash
+PowerShell:
+
+```powershell
 docker compose up -d redis
 $env:PYTHONPATH="src;."
 python -m skysh_kulab.ingestion.main run
 ```
 
-다른 터미널에서 Redis bucket을 SQLite snapshot으로 저장:
+Git Bash:
 
 ```bash
+docker compose up -d redis
+PYTHONPATH="src:." python -m skysh_kulab.ingestion.main run
+```
+
+다른 터미널에서 Redis bucket을 SQLite snapshot으로 저장:
+
+PowerShell:
+
+```powershell
 $env:PYTHONPATH="src;."
+python -m app.snapshot_worker run --interval 30
+```
+
+Git Bash:
+
+```bash
 python -m app.snapshot_worker run --interval 30
 ```
 
 수집/저장 상태 확인:
 
-```bash
+PowerShell:
+
+```powershell
 $env:PYTHONPATH="src;."
 python -m skysh_kulab.ingestion.main ping-redis
+python -m app.snapshot_worker once
+```
+
+Git Bash:
+
+```bash
+PYTHONPATH="src:." python -m skysh_kulab.ingestion.main ping-redis
 python -m app.snapshot_worker once
 ```
 
