@@ -2,7 +2,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowLeft,
-  Info,
   Plus,
   RefreshCw,
   Search,
@@ -490,6 +489,11 @@ function App() {
                 <Flow label="Retail buy" value={snapshot.retail_buy_krw} tone="buy" explanation="개인으로 분류된 체결의 매수 금액입니다." />
                 <Flow label="Retail sell" value={snapshot.retail_sell_krw} tone="sell" explanation="개인으로 분류된 체결의 매도 금액입니다." />
               </div>
+              <div className="classification-note">
+                <strong>고래 / 개미 분류 기준</strong>
+                <p>체결금액이 서버 기준값 이상이면 고래, 그 미만이면 개미로 분류합니다. 현재 기본값은 1,000만원이며, 서버의 <code>WHALE_THRESHOLD_KRW</code> 환경변수로 바꿀 수 있습니다.</p>
+                <p>Upbit 체결 데이터에서 <code>BID</code>는 매수, <code>ASK</code>는 매도로 집계합니다. 그래서 최근 구간의 고래 체결이 매도 방향뿐이면 Whale buy가 0으로 표시될 수 있습니다.</p>
+              </div>
             </div>
 
             <aside className="panel persona-panel" id="persona">
@@ -500,14 +504,13 @@ function App() {
                 </div>
                 <PersonaBadge persona={persona.persona} dark />
               </div>
-              <div className={`persona-badge ${persona.persona}`}>
+              <div className={`persona-badge detail-tooltip ${persona.persona}`} data-tooltip="Persona 판별 신뢰도입니다. 조건에 부합한 reason code 수가 많을수록 높아집니다.">
                 <span className="persona-badge-icon" tabIndex={0} aria-label={`${personaLabel(persona.persona)}: ${personaInsight(persona.persona)}`}>
                   <PersonaIcon persona={persona.persona} />
                   <span className="tooltip persona-tooltip">{personaInsight(persona.persona)}</span>
                 </span>
                 <span className="persona-badge-name">{personaLabel(persona.persona)}</span>
                 <strong>{Math.round(persona.confidence * 100)}%</strong>
-                <InfoTip text="Persona 판별 신뢰도입니다. 조건에 부합한 reason code 수가 많을수록 높아집니다." />
               </div>
               <p className="persona-insight">{personaInsight(persona.persona)}</p>
               <div className="reason-list">
@@ -516,12 +519,12 @@ function App() {
                 ))}
               </div>
               <div className="persona-stats">
-                <div>
-                  <span>Trade count <InfoTip text="선택한 timeframe 안에서 집계된 총 체결 횟수입니다." /></span>
+                <div className="detail-tooltip" data-tooltip="선택한 timeframe 안에서 집계된 총 체결 횟수입니다.">
+                  <span>Trade count</span>
                   <strong>{formatCount(snapshot.trade_count)}</strong>
                 </div>
-                <div>
-                  <span>Whale count <InfoTip text="선택한 timeframe 안에서 고래 기준을 넘긴 체결 횟수입니다." /></span>
+                <div className="detail-tooltip" data-tooltip="선택한 timeframe 안에서 고래 기준을 넘긴 체결 횟수입니다.">
+                  <span>Whale count</span>
                   <strong>{formatCount(snapshot.whale_count)}</strong>
                 </div>
               </div>
@@ -535,8 +538,8 @@ function App() {
 
 function Metric({ label, value, trendText, positive, explanation }: { label: string; value: string; trendText: string; positive: boolean; explanation: string }) {
   return (
-    <article className="metric">
-      <span>{label} <InfoTip text={explanation} /></span>
+    <article className="metric detail-tooltip" data-tooltip={explanation}>
+      <span>{label}</span>
       <strong>{value}</strong>
       <em className={positive ? "positive" : "negative"}>{trendText}</em>
     </article>
@@ -557,8 +560,8 @@ function Chart() {
 
 function Flow({ label, value, tone, explanation }: { label: string; value: number; tone: "buy" | "sell"; explanation: string }) {
   return (
-    <div className="flow-item">
-      <span>{label} <InfoTip text={explanation} /></span>
+    <div className="flow-item detail-tooltip" data-tooltip={explanation}>
+      <span>{label}</span>
       <strong className={tone === "buy" ? "positive" : "negative"}>{formatKrw(value)}</strong>
     </div>
   );
@@ -588,15 +591,6 @@ function PersonaBadge({ persona, dark = false }: { persona: Persona; dark?: bool
     <span className={`persona-icon ${persona} ${dark ? "dark" : ""}`} tabIndex={0} aria-label={`${personaLabel(persona)}: ${personaInsight(persona)}`}>
       <PersonaIcon persona={persona} />
       <span className="tooltip persona-tooltip">{personaInsight(persona)}</span>
-    </span>
-  );
-}
-
-function InfoTip({ text }: { text: string }) {
-  return (
-    <span className="info-tip" tabIndex={0} aria-label={text}>
-      <Info size={13} />
-      <span className="tooltip">{text}</span>
     </span>
   );
 }

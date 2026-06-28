@@ -583,6 +583,35 @@ h1 {
   display: block;
 }
 
+.detail-tooltip {
+  position: relative;
+}
+
+.detail-tooltip::after {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: none;
+  content: attr(data-tooltip);
+  width: min(280px, 70vw);
+  transform: translateX(-50%);
+  border-radius: 8px;
+  color: var(--canvas);
+  background: var(--brand-dark);
+  box-shadow: rgba(0, 55, 112, 0.18) 0 8px 24px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.45;
+  text-align: left;
+  pointer-events: none;
+}
+
+.detail-tooltip:hover::after {
+  display: block;
+}
+
 .watch-main {
   display: grid;
   min-width: 0;
@@ -921,6 +950,32 @@ h1 {
   border: 1px solid var(--hairline);
   border-radius: 8px;
   background: var(--canvas-soft);
+}
+
+.classification-note {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--canvas-soft);
+  padding: 16px;
+}
+
+.classification-note strong {
+  font-size: 14px;
+}
+
+.classification-note p {
+  margin: 0;
+  color: var(--ink-mute);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.classification-note code {
+  color: var(--ink);
+  font-size: 12px;
 }
 
 .persona-panel {
