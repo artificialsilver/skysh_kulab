@@ -255,7 +255,7 @@ function App() {
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">S</div>
-          <span>SkySH</span>
+          <span>CoinflowPersona</span>
         </div>
         <nav className="nav">
           <button
@@ -301,7 +301,7 @@ function App() {
       <section className="hero" id="watchlist">
         <div>
           <span className="tag">UTC snapshot · KST display</span>
-          <h1>Watchlist console</h1>
+          <h1>CoinflowPersona</h1>
           <p className="lead">등록된 관심종목의 Persona와 핵심 흐름을 먼저 보고, 종목을 선택해 지표 상세를 확인합니다.</p>
         </div>
         <div className="hero-controls" aria-label="Market controls">
