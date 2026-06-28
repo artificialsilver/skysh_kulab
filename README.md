@@ -40,6 +40,12 @@ Windows에서 한 번에 실행:
 run_all.cmd
 ```
 
+한 번에 종료:
+
+```cmd
+stop_all.cmd
+```
+
 개별 실행:
 
 ```cmd
