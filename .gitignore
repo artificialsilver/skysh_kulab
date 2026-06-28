@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.vite/
+.pytest_cache/
+__pycache__/
+.venv/
+.env
+*.pyc
+*.py[cod]
+*.db
+*.tsbuildinfo
+local/
+
